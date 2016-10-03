@@ -146,6 +146,50 @@ class Csv
     }
 
     /**
+     * Output CSV data to HTTP
+     *
+     * @param  string  $csvString
+     * @param  string  $filename
+     * @param  boolean $forceDownload
+     * @return void
+     */
+    public static function outputToHttp($csvString, $filename = 'pop-data.csv', $forceDownload = true)
+    {
+        $headers = [
+            'Content-type'        => 'text/csv',
+            'Content-disposition' => (($forceDownload) ? 'attachment; ' : null) . 'filename=' . $filename
+        ];
+
+        if (isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) {
+            $headers['Expires']       = 0;
+            $headers['Cache-Control'] = 'private, must-revalidate';
+            $headers['Pragma']        = 'cache';
+        }
+
+        // Send the headers and output the file
+        if (!headers_sent()) {
+            header('HTTP/1.1 200 OK');
+            foreach ($headers as $name => $value) {
+                header($name . ': ' . $value);
+            }
+        }
+
+        echo $csvString;
+    }
+
+    /**
+     * Output CSV data to a file
+     *
+     * @param  string $csvString
+     * @param  string $to
+     * @return void
+     */
+    public static function writeToFile($csvString, $to)
+    {
+        file_put_contents($to, $csvString);
+    }
+
+    /**
      * Get field headers
      *
      * @param  mixed  $data
