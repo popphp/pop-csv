@@ -27,45 +27,129 @@ class Csv
 {
 
     /**
-     * Parse the CSV string into a PHP array
-     *
-     * @param  string $string
-     * @param  array  $options
-     * @return array
+     * CSV data in PHP
+     * @var mixed
      */
-    public static function unserialize($string, array $options = [])
-    {
-        $delimiter = (isset($options['delimiter'])) ? $options['delimiter']    : ',';
-        $enclosure = (isset($options['enclosure'])) ? $options['enclosure']    : '"';
-        $escape    = (isset($options['escape']))    ? $options['escape']       : "\\";
-        $fields    = (isset($options['fields']))    ? (bool)$options['fields'] : true;
-        $lines     = preg_split("/((\r?\n)|(\r\n?))/", $string);
-        $data      = [];
-        $fieldKeys = [];
+    protected $data = null;
 
-        foreach ($lines as $i => $line) {
-            $line = trim($line);
-            if (!empty($line)) {
-                if (($i == 0) && ($fields)) {
-                    $fieldNames = str_getcsv($line, $delimiter, $enclosure, $escape);
-                    foreach ($fieldNames as $name) {
-                        $fieldKeys[] = trim($name);
-                    }
-                } else {
-                    $values = str_getcsv($line, $delimiter, $enclosure, $escape);
-                    foreach ($values as $key => $value) {
-                        $values[$key] = stripslashes(trim($value));
-                    }
-                    if ((count($fieldKeys) > 0) && (count($fieldKeys) == count($values))) {
-                        $data[] = array_combine($fieldKeys, $values);
-                    } else {
-                        $data[] = $values;
-                    }
-                }
+    /**
+     * CSV string
+     * @var string
+     */
+    protected $string = null;
+
+    /**
+     * Constructor
+     *
+     * Instantiate the Csv object.
+     *
+     * @param  mixed $data
+     * @throws Exception
+     */
+    public function __construct($data)
+    {
+        // If data is a file
+        if (is_string($data) && (stripos($data, '.csv') !== false) && file_exists($data)) {
+            $this->string = file_get_contents($data);
+        // Else, if it's just data
+        } else if (!is_string($data)) {
+            $this->data = $data;
+        // Else if it's a string or stream of data
+        } else {
+            $this->string = $data;
+        }
+    }
+
+    /**
+     * Serialize the data to a CSV string
+     *
+     * @param  array $options
+     * @throws Exception
+     * @return string
+     */
+    public function serialize(array $options = [])
+    {
+        $this->string = self::serializeData($this->data, $options);
+        return $this->string;
+    }
+
+    /**
+     * Unserialize the string to data
+     *
+     * @param  array  $options
+     * @throws Exception
+     * @return mixed
+     */
+    public function unserialize(array $options = [])
+    {
+        $this->data = self::unserializeString($this->string, $options);
+        return $this->data;
+    }
+
+    /**
+     * Output CSV string data to HTTP
+     *
+     * @param  string  $filename
+     * @param  boolean $forceDownload
+     * @throws Exception
+     * @return void
+     */
+    public function outputToHttp($filename = 'pop-data.csv', $forceDownload = true)
+    {
+        if (null === $this->string) {
+            throw new Exception('Error: The data has not been properly serialized.');
+        }
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => (($forceDownload) ? 'attachment; ' : null) . 'filename=' . $filename
+        ];
+
+        if (isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) {
+            $headers['Expires']       = 0;
+            $headers['Cache-Control'] = 'private, must-revalidate';
+            $headers['Pragma']        = 'cache';
+        }
+
+        // Send the headers and output the file
+        if (!headers_sent()) {
+            header('HTTP/1.1 200 OK');
+            foreach ($headers as $name => $value) {
+                header($name . ': ' . $value);
             }
         }
 
-        return $data;
+        echo $this->string;
+    }
+
+    /**
+     * Render CSV string data to string
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        // Attempt to serialize data if it hasn't been done yet
+        if ((null === $this->string) && (null !== $this->data)) {
+            $this->serialize();
+        }
+
+        return $this->string;
+    }
+
+    /**
+     * Output CSV data to a file
+     *
+     * @param  string $to
+     * @throws Exception
+     * @return void
+     */
+    public function writeToFile($to)
+    {
+        if (null === $this->string) {
+            throw new Exception('Error: The data has not been properly serialized.');
+        }
+        file_put_contents($to, $this->string);
     }
 
     /**
@@ -75,7 +159,7 @@ class Csv
      * @param  array $options
      * @return string
      */
-    public static function serialize($data, array $options = [])
+    public static function serializeData($data, array $options = [])
     {
         $keys    = array_keys($data);
         $isAssoc = false;
@@ -118,6 +202,48 @@ class Csv
     }
 
     /**
+     * Parse the CSV string into a PHP array
+     *
+     * @param  string $string
+     * @param  array  $options
+     * @return array
+     */
+    public static function unserializeString($string, array $options = [])
+    {
+        $delimiter = (isset($options['delimiter'])) ? $options['delimiter']    : ',';
+        $enclosure = (isset($options['enclosure'])) ? $options['enclosure']    : '"';
+        $escape    = (isset($options['escape']))    ? $options['escape']       : "\\";
+        $fields    = (isset($options['fields']))    ? (bool)$options['fields'] : true;
+        $lines     = preg_split("/((\r?\n)|(\r\n?))/", $string);
+        $data      = [];
+        $fieldKeys = [];
+
+        foreach ($lines as $i => $line) {
+            $line = trim($line);
+            if (!empty($line)) {
+                if (($i == 0) && ($fields)) {
+                    $fieldNames = str_getcsv($line, $delimiter, $enclosure, $escape);
+                    foreach ($fieldNames as $name) {
+                        $fieldKeys[] = trim($name);
+                    }
+                } else {
+                    $values = str_getcsv($line, $delimiter, $enclosure, $escape);
+                    foreach ($values as $key => $value) {
+                        $values[$key] = stripslashes(trim($value));
+                    }
+                    if ((count($fieldKeys) > 0) && (count($fieldKeys) == count($values))) {
+                        $data[] = array_combine($fieldKeys, $values);
+                    } else {
+                        $data[] = $values;
+                    }
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * Serialize single row of data;
      *
      * @param  array  $value
@@ -143,50 +269,6 @@ class Csv
             }
         }
         return implode($delimiter, $rowAry) . "\n";
-    }
-
-    /**
-     * Output CSV data to HTTP
-     *
-     * @param  string  $csvString
-     * @param  string  $filename
-     * @param  boolean $forceDownload
-     * @return void
-     */
-    public static function outputToHttp($csvString, $filename = 'pop-data.csv', $forceDownload = true)
-    {
-        $headers = [
-            'Content-type'        => 'text/csv',
-            'Content-disposition' => (($forceDownload) ? 'attachment; ' : null) . 'filename=' . $filename
-        ];
-
-        if (isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) {
-            $headers['Expires']       = 0;
-            $headers['Cache-Control'] = 'private, must-revalidate';
-            $headers['Pragma']        = 'cache';
-        }
-
-        // Send the headers and output the file
-        if (!headers_sent()) {
-            header('HTTP/1.1 200 OK');
-            foreach ($headers as $name => $value) {
-                header($name . ': ' . $value);
-            }
-        }
-
-        echo $csvString;
-    }
-
-    /**
-     * Output CSV data to a file
-     *
-     * @param  string $csvString
-     * @param  string $to
-     * @return void
-     */
-    public static function writeToFile($csvString, $to)
-    {
-        file_put_contents($to, $csvString);
     }
 
     /**
