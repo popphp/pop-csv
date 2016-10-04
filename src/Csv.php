@@ -96,8 +96,9 @@ class Csv
      */
     public function outputToHttp($filename = 'pop-data.csv', $forceDownload = true)
     {
-        if (null === $this->string) {
-            throw new Exception('Error: The data has not been properly serialized.');
+        // Attempt to serialize data if it hasn't been done yet
+        if ((null === $this->string) && (null !== $this->data)) {
+            $this->serialize();
         }
 
         $headers = [
@@ -141,14 +142,15 @@ class Csv
      * Output CSV data to a file
      *
      * @param  string $to
-     * @throws Exception
      * @return void
      */
     public function writeToFile($to)
     {
-        if (null === $this->string) {
-            throw new Exception('Error: The data has not been properly serialized.');
+        // Attempt to serialize data if it hasn't been done yet
+        if ((null === $this->string) && (null !== $this->data)) {
+            $this->serialize();
         }
+
         file_put_contents($to, $this->string);
     }
 
