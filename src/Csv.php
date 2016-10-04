@@ -17,7 +17,7 @@ namespace Pop\Csv;
  * CSV class
  *
  * @category   Pop
- * @package    Pop_Data
+ * @package    Pop\Csv
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
