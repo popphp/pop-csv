@@ -1,6 +1,10 @@
 pop-csv
 =======
 
+[![Build Status](https://travis-ci.org/popphp/pop-csv.svg?branch=master)](https://travis-ci.org/popphp/pop-csv)
+[![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-csv)](http://cc.popphp.org/pop-csv/)
+
+
 OVERVIEW
 --------
 `pop-csv` provides a streamlined way to work with PHP data and the CSV format.
