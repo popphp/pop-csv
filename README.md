@@ -73,7 +73,7 @@ $data->writeToFile('/path/to/file.csv');
 $phpData = [ ... ];
 
 $data = new Pop\Csv\Csv($phpData);
-$data->serialize('csv');
+$data->serialize();
 $data->outputToHttp();
 ```
 
