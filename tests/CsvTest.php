@@ -3,8 +3,9 @@
 namespace Pop\Data\Test;
 
 use Pop\Csv\Csv;
+use PHPUnit\Framework\TestCase;
 
-class CsvTest extends \PHPUnit_Framework_TestCase
+class CsvTest extends TestCase
 {
 
     public function testUnserializeAndSerialize()

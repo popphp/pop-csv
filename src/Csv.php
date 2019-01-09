@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2018 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2019 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,9 @@ namespace Pop\Csv;
  * @category   Pop
  * @package    Pop\Csv
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2018 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2019 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    3.0.1
+ * @version    3.0.2
  */
 class Csv
 {
@@ -121,21 +121,6 @@ class Csv
         }
 
         echo $this->string;
-    }
-
-    /**
-     * Render CSV string data to string
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        // Attempt to serialize data if it hasn't been done yet
-        if ((null === $this->string) && (null !== $this->data)) {
-            $this->serialize();
-        }
-
-        return $this->string;
     }
 
     /**
@@ -307,6 +292,21 @@ class Csv
             $fields = str_getcsv($lines[0]);
         }
         return (count($fields) > 0);
+    }
+
+    /**
+     * Render CSV string data to string
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        // Attempt to serialize data if it hasn't been done yet
+        if ((null === $this->string) && (null !== $this->data)) {
+            $this->serialize();
+        }
+
+        return $this->string;
     }
 
 }
