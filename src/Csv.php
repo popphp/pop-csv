@@ -44,7 +44,6 @@ class Csv
      * Instantiate the Csv object.
      *
      * @param  mixed $data
-     * @throws Exception
      */
     public function __construct($data)
     {
@@ -61,10 +60,82 @@ class Csv
     }
 
     /**
+     * Load CSV file
+     *
+     * @param  string $file
+     * @param  array $options
+     * @return self
+     */
+    public static function loadFile($file, array $options = [])
+    {
+        $csv = new self($file);
+        $csv->unserialize($options);
+        return $csv;
+    }
+
+    /**
+     * Load CSV data
+     *
+     * @param  array $data
+     * @param  array $options
+     * @return self
+     */
+    public static function loadData(array $data, array $options = [])
+    {
+        $csv = new self($data);
+        $csv->serialize($options);
+        return $csv;
+    }
+
+    /**
+     * Load CSV file and get data
+     *
+     * @param  string $file
+     * @param  array $options
+     * @return array
+     */
+    public static function getDataFromFile($file, array $options = [])
+    {
+        $csv = new self($file);
+        return $csv->unserialize($options);
+    }
+
+    /**
+     * Write data to file
+     *
+     * @param  array  $data
+     * @param  string $to
+     * @param  array  $options
+     * @return void
+     */
+    public static function writeDataToFile(array $data, $to, array $options = [])
+    {
+        $csv = new self($data);
+        $csv->serialize($options);
+        $csv->writeToFile($to);
+    }
+
+    /**
+     * Write data to file
+     *
+     * @param  array   $data
+     * @param  array   $options
+     * @param  string  $filename
+     * @param  boolean $forceDownload
+     * @param  array   $headers
+     * @return void
+     */
+    public static function outputDataToHttp(array $data, array $options = [], $filename = 'pop-data.csv', $forceDownload = true, array $headers = [])
+    {
+        $csv = new self($data);
+        $csv->serialize($options);
+        $csv->outputToHttp($filename, $forceDownload, $headers);
+    }
+
+    /**
      * Serialize the data to a CSV string
      *
      * @param  array $options
-     * @throws Exception
      * @return string
      */
     public function serialize(array $options = [])
@@ -77,7 +148,6 @@ class Csv
      * Unserialize the string to data
      *
      * @param  array  $options
-     * @throws Exception
      * @return mixed
      */
     public function unserialize(array $options = [])
@@ -87,29 +157,65 @@ class Csv
     }
 
     /**
+     * Get data
+     *
+     * @return array
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
+
+    /**
+     * Get string
+     *
+     * @return string
+     */
+    public function getString()
+    {
+        return $this->string;
+    }
+
+    /**
+     * Check if data was serialized
+     *
+     * @return boolean
+     */
+    public function isSerialized()
+    {
+        return (null !== $this->string);
+    }
+
+    /**
+     * Check if string was unserialized
+     *
+     * @return boolean
+     */
+    public function isUnserialized()
+    {
+        return (null !== $this->data);
+    }
+
+    /**
      * Output CSV string data to HTTP
      *
      * @param  string  $filename
      * @param  boolean $forceDownload
-     * @throws Exception
+     * @param  array   $headers
      * @return void
      */
-    public function outputToHttp($filename = 'pop-data.csv', $forceDownload = true)
+    public function outputToHttp($filename = 'pop-data.csv', $forceDownload = true, array $headers = [])
     {
         // Attempt to serialize data if it hasn't been done yet
         if ((null === $this->string) && (null !== $this->data)) {
             $this->serialize();
         }
 
-        $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => (($forceDownload) ? 'attachment; ' : null) . 'filename=' . $filename
-        ];
-
-        if (isset($_SERVER['SERVER_PORT']) && ($_SERVER['SERVER_PORT'] == 443)) {
-            $headers['Expires']       = 0;
-            $headers['Cache-Control'] = 'private, must-revalidate';
-            $headers['Pragma']        = 'cache';
+        if (!isset($headers['Content-Type'])) {
+            $headers['Content-Type'] = 'text/csv';
+        }
+        if (!isset($headers['Content-Disposition'])) {
+            $headers['Content-Disposition'] = (($forceDownload) ? 'attachment; ' : null) . 'filename=' . $filename;
         }
 
         // Send the headers and output the file

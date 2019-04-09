@@ -8,6 +8,73 @@ use PHPUnit\Framework\TestCase;
 class CsvTest extends TestCase
 {
 
+    public function testLoadFile()
+    {
+        $csv = Csv::loadFile(__DIR__ . '/tmp/data.csv');
+        $this->assertEquals('testuser1', $csv->getData()[0]['username']);
+    }
+
+    public function testLoadData()
+    {
+        $data = [
+            'my_table' => [
+                [
+                    'first_name' => 'Bob',
+                    'last_name'  => 'Smith, III'
+                ],
+                [
+                    'first_name' => 'Jane',
+                    'last_name'  => 'Smith "Janey"'
+                ],
+                [
+                    'first_name' => 'Jim',
+                    'last_name'  => 'Smith, Jr. "Junior"'
+                ]
+            ]
+        ];
+        $csv = Csv::loadData($data);
+        $this->assertInstanceOf('Pop\Csv\Csv', $csv);
+    }
+
+    public function testGetDataFromFile()
+    {
+        $data = Csv::getDataFromFile(__DIR__ . '/tmp/data.csv');
+        $this->assertEquals('testuser1', $data[0]['username']);
+    }
+
+    public function testWriteDataToFile()
+    {
+        $data = [
+            'my_table' => [
+                [
+                    'first_name' => 'Bob',
+                    'last_name'  => 'Smith'
+                ],
+                [
+                    'first_name' => 'Jane',
+                    'last_name'  => 'Smith'
+                ]
+            ]
+        ];
+
+        Csv::writeDataToFile($data, __DIR__ . '/tmp/test.csv');
+        $this->assertFileExists(__DIR__ . '/tmp/test.csv');
+
+        if (file_exists(__DIR__ . '/tmp/test.csv')) {
+            unlink(__DIR__ . '/tmp/test.csv');
+        }
+    }
+
+    public function testGetters()
+    {
+        $csv = new Csv(__DIR__ . '/tmp/data.csv');
+        $csv->unserialize();
+        $this->assertEquals('testuser1', $csv->getData()[0]['username']);
+        $this->assertContains('testuser1', $csv->getString());
+        $this->assertTrue($csv->isSerialized());
+        $this->assertTrue($csv->isUnserialized());
+    }
+
     public function testUnserializeAndSerialize()
     {
         $data1 = new Csv(__DIR__ . '/tmp/data.csv');
@@ -105,17 +172,14 @@ class CsvTest extends TestCase
         $this->assertContains('foo', $result);
     }
 
+
     /**
      * @runInSeparateProcess
      */
-    public function testOutputToHttps()
+    public function testOutputDataToHttp()
     {
-        $_SERVER['SERVER_PORT'] = 443;
-        $data = new Csv([
-            ['foo' => 'bar']
-        ]);
         ob_start();
-        $data->outputToHttp('test.csv', false);
+        Csv::outputDataToHttp([['foo' => 'bar']], [], 'test.csv', false);
         $result = ob_get_clean();
         $this->assertContains('foo', $result);
     }
