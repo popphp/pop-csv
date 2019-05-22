@@ -311,26 +311,30 @@ class Csv
         $data      = [];
         $fieldKeys = [];
 
-        foreach ($lines as $i => $line) {
-            $line = trim($line);
-            if (!empty($line)) {
-                if (($i == 0) && ($fields)) {
-                    $fieldNames = str_getcsv($line, $delimiter, $enclosure, $escape);
-                    foreach ($fieldNames as $name) {
-                        $fieldKeys[] = trim($name);
+        $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pop-csv-tmp-' . time() . '.csv';
+        file_put_contents($tempFile, $string);
+
+        if ($fields) {
+            $fieldNames = str_getcsv($lines[0], $delimiter, $enclosure, $escape);
+            foreach ($fieldNames as $name) {
+                $fieldKeys[] = trim($name);
+            }
+        }
+
+        if (($handle = fopen($tempFile, 'r')) !== false) {
+            while (($dataFields = fgetcsv($handle, 1000, $delimiter, $enclosure, $escape)) !== false) {
+                if (($fields) && (count($dataFields) == count($fieldKeys)) && ($dataFields != $fieldKeys)) {
+                    $d = [];
+                    foreach ($dataFields as $i => $value) {
+                        $d[$fieldKeys[$i]] = $value;
                     }
-                } else {
-                    $values = str_getcsv($line, $delimiter, $enclosure, $escape);
-                    foreach ($values as $key => $value) {
-                        $values[$key] = stripslashes(trim($value));
-                    }
-                    if ((count($fieldKeys) > 0) && (count($fieldKeys) == count($values))) {
-                        $data[] = array_combine($fieldKeys, $values);
-                    } else {
-                        $data[] = $values;
-                    }
+                    $data[] = $d;
+                } else if ($dataFields != $fieldKeys) {
+                    $data[] = $dataFields;
                 }
             }
+            fclose($handle);
+            unlink($tempFile);
         }
 
         return $data;
