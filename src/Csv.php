@@ -355,11 +355,12 @@ class Csv
         $rowAry = [];
         foreach ($value as $key => $val) {
             if (!in_array($key, $omit)) {
-                $val = str_replace(["\n", "\r"], [" ", " "], $val);
                 if (strpos($val, $delimiter) !== false) {
                     if (strpos($val, $enclosure) !== false) {
                         $val = str_replace($enclosure, $escape . $enclosure, $val);
                     }
+                    $val = $enclosure . $val . $enclosure;
+                } else if (strpos($val, "\n") !== false) {
                     $val = $enclosure . $val . $enclosure;
                 }
                 $rowAry[] = $val;
