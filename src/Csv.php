@@ -347,20 +347,17 @@ class Csv
      * @param  array  $omit
      * @param  string $delimiter
      * @param  string $enclosure
-     * @param  string $escape
      * @return string
      */
-    public static function serializeRow(array $value, array $omit = [], $delimiter = ',', $enclosure = '"', $escape = "\\")
+    public static function serializeRow(array $value, array $omit = [], $delimiter = ',', $enclosure = '"')
     {
         $rowAry = [];
         foreach ($value as $key => $val) {
             if (!in_array($key, $omit)) {
-                if (strpos($val, $delimiter) !== false) {
-                    if (strpos($val, $enclosure) !== false) {
-                        $val = str_replace($enclosure, $escape . $enclosure, $val);
-                    }
-                    $val = $enclosure . $val . $enclosure;
-                } else if (strpos($val, "\n") !== false) {
+                if (strpos($val, $enclosure) !== false) {
+                    $val = str_replace($enclosure, $enclosure . $enclosure, $val);
+                }
+                if ((strpos($val, $delimiter) !== false) || (strpos($val, "\n") !== false)) {
                     $val = $enclosure . $val . $enclosure;
                 }
                 $rowAry[] = $val;
