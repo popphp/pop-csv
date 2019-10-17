@@ -276,10 +276,13 @@ class Csv
         } else {
             $omit = [];
         }
-        $delimiter = (isset($options['delimiter'])) ? $options['delimiter']    : ',';
-        $enclosure = (isset($options['enclosure'])) ? $options['enclosure']    : '"';
-        $escape    = (isset($options['escape']))    ? $options['escape']       : "\\";
-        $fields    = (isset($options['fields']))    ? (bool)$options['fields'] : true;
+
+        $delimiter = (isset($options['delimiter'])) ? $options['delimiter']     : ',';
+        $enclosure = (isset($options['enclosure'])) ? $options['enclosure']     : '"';
+        $escape    = (isset($options['escape']))    ? $options['escape']        : '"';
+        $fields    = (isset($options['fields']))    ? (bool)$options['fields']  : true;
+        $newline   = (isset($options['newline']))   ? (bool)$options['newline'] : true;
+        $limit     = (isset($options['limit']))     ? (int)$options['limit']    : 0;
         $csv       = '';
 
         if (is_array($data) && isset($data[0]) && (is_array($data[0]) || ($data[0] instanceof \ArrayObject)) && ($fields)) {
@@ -288,7 +291,7 @@ class Csv
 
         // Initialize and clean the field values.
         foreach ($data as $value) {
-            $csv .= self::serializeRow((array)$value, $omit, $delimiter, $enclosure, $escape);
+            $csv .= self::serializeRow((array)$value, $omit, $delimiter, $enclosure, $escape, $newline, $limit);
         }
 
         return $csv;
@@ -343,21 +346,32 @@ class Csv
     /**
      * Serialize single row of data;
      *
-     * @param  array  $value
-     * @param  array  $omit
-     * @param  string $delimiter
-     * @param  string $enclosure
+     * @param  array   $value
+     * @param  array   $omit
+     * @param  string  $delimiter
+     * @param  string  $enclosure
+     * @param  string  $escape
+     * @param  boolean $newline
+     * @param  int     $limit
      * @return string
      */
-    public static function serializeRow(array $value, array $omit = [], $delimiter = ',', $enclosure = '"')
+    public static function serializeRow(
+        array $value, array $omit = [], $delimiter = ',', $enclosure = '"', $escape = '"', $newline = true, $limit = 0
+    )
     {
         $rowAry = [];
         foreach ($value as $key => $val) {
             if (!in_array($key, $omit)) {
-                if (strpos($val, $enclosure) !== false) {
-                    $val = str_replace($enclosure, $enclosure . $enclosure, $val);
+                if (!$newline) {
+                    $val = str_replace(["\n", "\r"], [" ", " "], $val);
                 }
-                if ((strpos($val, $delimiter) !== false) || (strpos($val, "\n") !== false)) {
+                if ((int)$limit > 0) {
+                    $val = substr($val, 0, (int)$limit);
+                }
+                if (strpos($val, $enclosure) !== false) {
+                    $val = str_replace($enclosure, $escape . $enclosure, $val);
+                }
+                if ((strpos($val, $delimiter) !== false) || (strpos($val, "\n") !== false) || (strpos($val, $escape . $enclosure) !== false)) {
                     $val = $enclosure . $val . $enclosure;
                 }
                 $rowAry[] = $val;

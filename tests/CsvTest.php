@@ -130,6 +130,42 @@ class CsvTest extends TestCase
         $this->assertNotContains('Bob', $csvString);
     }
 
+    public function testNewline()
+    {
+        $data = [
+            [
+                'first_name' => 'Bob',
+                'last_name'  => 'Smith',
+                'notes'      => "Hello What's up?\nHow are you doing?\nI'm doing fine!"
+            ]
+        ];
+        $string    = new Csv($data);
+        $csvString = $string->serialize(['newline' => false]);
+
+        $data = new Csv($csvString);
+        $value = $data->unserialize();
+        $this->assertEquals(1, count($value));
+        $this->assertEquals("Hello What's up? How are you doing? I'm doing fine!", $value[0]['notes']);
+    }
+
+    public function testLimit()
+    {
+        $data = [
+            [
+                'first_name' => 'Bob',
+                'last_name'  => 'Smith'
+            ]
+        ];
+        $string    = new Csv($data);
+        $csvString = $string->serialize(['limit' => 2]);
+
+        $data = new Csv($csvString);
+        $value = $data->unserialize();
+        $this->assertEquals(1, count($value));
+        $this->assertEquals('Bo', $value[0]['first_name']);
+        $this->assertEquals('Sm', $value[0]['last_name']);
+    }
+
     public function testIsValid()
     {
         $this->assertTrue(Csv::isValid(file_get_contents(__DIR__ . '/tmp/data.csv')));
