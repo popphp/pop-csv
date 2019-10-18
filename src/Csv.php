@@ -151,6 +151,24 @@ class Csv
     }
 
     /**
+     * Process CSV options
+     *
+     * @param  array $options
+     * @return array
+     */
+    public static function processOptions(array $options)
+    {
+        $options['delimiter'] = (isset($options['delimiter'])) ? $options['delimiter']     : ',';
+        $options['enclosure'] = (isset($options['enclosure'])) ? $options['enclosure']     : '"';
+        $options['escape']    = (isset($options['escape']))    ? $options['escape']        : '"';
+        $options['fields']    = (isset($options['fields']))    ? (bool)$options['fields']  : true;
+        $options['newline']   = (isset($options['newline']))   ? (bool)$options['newline'] : true;
+        $options['limit']     = (isset($options['limit']))     ? (int)$options['limit']    : 0;
+
+        return $options;
+    }
+
+    /**
      * Serialize the data to a CSV string
      *
      * @param  array $options
@@ -288,6 +306,41 @@ class Csv
     }
 
     /**
+     * Append additional CSV data to a pre-existing file
+     *
+     * @param  string  $file
+     * @param  array   $data
+     * @param  array   $options
+     * @param  boolean $validate
+     * @return void
+     */
+    public static function appendToFile($file, $data, array $options = [], $validate = true)
+    {
+        if (!file_exists($file)) {
+            throw new Exception("Error: The file '" . $file . "' does not exist.");
+        }
+
+        if ($validate) {
+            $keys    = array_keys($data);
+            $headers = array_map(
+                function($value) { return str_replace('"', '', $value);}, explode(',', trim(fgets(fopen($file, 'r'))))
+            );
+
+            if ($keys != $headers) {
+                throw new Exception("Error: The new data's columns do not match the CSV files columns.");
+            }
+        }
+
+        $options = self::processOptions($options);
+        $csvRow  = self::serializeRow(
+            (array)$data, [], $options['delimiter'], $options['enclosure'],
+            $options['escape'], $options['newline'], $options['limit']
+        );
+
+        file_put_contents($file, $csvRow, FILE_APPEND);
+    }
+
+    /**
      * Convert the data into CSV format.
      *
      * @param  mixed $data
@@ -319,22 +372,20 @@ class Csv
             $omit = [];
         }
 
-        $delimiter = (isset($options['delimiter'])) ? $options['delimiter']     : ',';
-        $enclosure = (isset($options['enclosure'])) ? $options['enclosure']     : '"';
-        $escape    = (isset($options['escape']))    ? $options['escape']        : '"';
-        $fields    = (isset($options['fields']))    ? (bool)$options['fields']  : true;
-        $newline   = (isset($options['newline']))   ? (bool)$options['newline'] : true;
-        $limit     = (isset($options['limit']))     ? (int)$options['limit']    : 0;
-        $csv       = '';
+        $options = self::processOptions($options);
+        $csv     = '';
 
         if (is_array($data) && isset($data[0]) &&
-            (is_array($data[0]) || ($data[0] instanceof \ArrayObject)) && ($fields)) {
-            $csv .= self::getFieldHeaders((array)$data[0], $delimiter, $omit);
+            (is_array($data[0]) || ($data[0] instanceof \ArrayObject)) && ($options['fields'])) {
+            $csv .= self::getFieldHeaders((array)$data[0], $options['delimiter'], $omit);
         }
 
         // Initialize and clean the field values.
         foreach ($data as $value) {
-            $csv .= self::serializeRow((array)$value, $omit, $delimiter, $enclosure, $escape, $newline, $limit);
+            $csv .= self::serializeRow(
+                (array)$value, $omit, $options['delimiter'], $options['enclosure'],
+                $options['escape'], $options['newline'], $options['limit']
+            );
         }
 
         return $csv;
@@ -349,10 +400,7 @@ class Csv
      */
     public static function unserializeString($string, array $options = [])
     {
-        $delimiter = (isset($options['delimiter'])) ? $options['delimiter']    : ',';
-        $enclosure = (isset($options['enclosure'])) ? $options['enclosure']    : '"';
-        $escape    = (isset($options['escape']))    ? $options['escape']       : "\\";
-        $fields    = (isset($options['fields']))    ? (bool)$options['fields'] : true;
+        $options   = self::processOptions($options);
         $lines     = preg_split("/((\r?\n)|(\r\n?))/", $string);
         $data      = [];
         $fieldKeys = [];
@@ -360,16 +408,16 @@ class Csv
         $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pop-csv-tmp-' . time() . '.csv';
         file_put_contents($tempFile, $string);
 
-        if ($fields) {
-            $fieldNames = str_getcsv($lines[0], $delimiter, $enclosure, $escape);
+        if ($options['fields']) {
+            $fieldNames = str_getcsv($lines[0], $options['delimiter'], $options['enclosure'], $options['escape']);
             foreach ($fieldNames as $name) {
                 $fieldKeys[] = trim($name);
             }
         }
 
         if (($handle = fopen($tempFile, 'r')) !== false) {
-            while (($dataFields = fgetcsv($handle, 1000, $delimiter, $enclosure, $escape)) !== false) {
-                if (($fields) && (count($dataFields) == count($fieldKeys)) && ($dataFields != $fieldKeys)) {
+            while (($dataFields = fgetcsv($handle, 1000, $options['delimiter'], $options['enclosure'], $options['escape'])) !== false) {
+                if (($options['fields']) && (count($dataFields) == count($fieldKeys)) && ($dataFields != $fieldKeys)) {
                     $d = [];
                     foreach ($dataFields as $i => $value) {
                         $d[$fieldKeys[$i]] = $value;

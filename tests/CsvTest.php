@@ -217,6 +217,38 @@ class CsvTest extends TestCase
         $string = new Csv($data);
         $string->writeToFile(__DIR__ . '/tmp/test.csv');
         $this->assertFileExists(__DIR__ . '/tmp/test.csv');
+    }
+
+
+    public function testAppendToFileException()
+    {
+        $this->expectException('Pop\Csv\Exception');
+        $data = [
+            'my_table' => [
+                [
+                    'first_name' => 'John'
+                ]
+            ]
+        ];
+
+        Csv::appendToFile(__DIR__ . '/tmp/test.csv', $data);
+    }
+
+
+    public function testAppendToFile()
+    {
+        $data = [
+            'my_table' => [
+                [
+                    'first_name' => 'John',
+                    'last_name'  => 'Smith'
+                ]
+            ]
+        ];
+
+        Csv::appendToFile(__DIR__ . '/tmp/test.csv', $data);
+        $csv = Csv::loadFile(__DIR__ . '/tmp/test.csv');
+        $this->assertEquals(3, count($csv->getData()));
 
         if (file_exists(__DIR__ . '/tmp/test.csv')) {
             unlink(__DIR__ . '/tmp/test.csv');
