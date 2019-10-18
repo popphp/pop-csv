@@ -14,6 +14,12 @@ class CsvTest extends TestCase
         $this->assertEquals('testuser1', $csv->getData()[0]['username']);
     }
 
+    public function testLoadString()
+    {
+        $csv = Csv::loadString(file_get_contents(__DIR__ . '/tmp/data.csv'));
+        $this->assertEquals('testuser1', $csv->getData()[0]['username']);
+    }
+
     public function testLoadData()
     {
         $data = [
@@ -63,6 +69,29 @@ class CsvTest extends TestCase
         if (file_exists(__DIR__ . '/tmp/test.csv')) {
             unlink(__DIR__ . '/tmp/test.csv');
         }
+    }
+
+    public function testSetters()
+    {
+        $data = [
+            [
+                'first_name' => 'Bob',
+                'last_name'  => 'Smith, III'
+            ],
+            [
+                'first_name' => 'Jane',
+                'last_name'  => 'Smith "Janey"'
+            ],
+            [
+                'first_name' => 'Jim',
+                'last_name'  => 'Smith, Jr. "Junior"'
+            ]
+        ];
+        $csv = new Csv();
+        $csv->setString(file_get_contents(__DIR__ . '/tmp/data.csv'));
+        $csv->setData($data);
+        $this->assertContains('testuser1', $csv->getString());
+        $this->assertEquals('Bob', $csv->getData()[0]['first_name']);
     }
 
     public function testGetters()

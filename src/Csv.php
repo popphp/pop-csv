@@ -45,17 +45,19 @@ class Csv
      *
      * @param  mixed $data
      */
-    public function __construct($data)
+    public function __construct($data = null)
     {
-        // If data is a file
-        if (is_string($data) && (stripos($data, '.csv') !== false) && file_exists($data)) {
-            $this->string = file_get_contents($data);
-        // Else, if it's just data
-        } else if (!is_string($data)) {
-            $this->data = $data;
-        // Else if it's a string or stream of data
-        } else {
-            $this->string = $data;
+        if (null !== $data) {
+            // If data is a file
+            if (is_string($data) && (stripos($data, '.csv') !== false) && file_exists($data)) {
+                $this->string = file_get_contents($data);
+                // Else, if it's just data
+            } else if (!is_string($data)) {
+                $this->data = $data;
+                // Else if it's a string or stream of data
+            } else {
+                $this->string = $data;
+            }
         }
     }
 
@@ -69,6 +71,20 @@ class Csv
     public static function loadFile($file, array $options = [])
     {
         $csv = new self($file);
+        $csv->unserialize($options);
+        return $csv;
+    }
+
+    /**
+     * Load CSV string
+     *
+     * @param  string $string
+     * @param  array $options
+     * @return self
+     */
+    public static function loadString($string, array $options = [])
+    {
+        $csv = new self($string);
         $csv->unserialize($options);
         return $csv;
     }
@@ -125,7 +141,9 @@ class Csv
      * @param  array   $headers
      * @return void
      */
-    public static function outputDataToHttp(array $data, array $options = [], $filename = 'pop-data.csv', $forceDownload = true, array $headers = [])
+    public static function outputDataToHttp(
+        array $data, array $options = [], $filename = 'pop-data.csv', $forceDownload = true, array $headers = []
+    )
     {
         $csv = new self($data);
         $csv->serialize($options);
@@ -157,6 +175,18 @@ class Csv
     }
 
     /**
+     * Set data
+     *
+     * @param  array $data
+     * @return Csv
+     */
+    public function setData(array $data)
+    {
+        $this->data = $data;
+        return $this;
+    }
+
+    /**
      * Get data
      *
      * @return array
@@ -164,6 +194,18 @@ class Csv
     public function getData()
     {
         return $this->data;
+    }
+
+    /**
+     * Set string
+     *
+     * @param  string $string
+     * @return Csv
+     */
+    public function setString($string)
+    {
+        $this->string = $string;
+        return $this;
     }
 
     /**
@@ -285,7 +327,8 @@ class Csv
         $limit     = (isset($options['limit']))     ? (int)$options['limit']    : 0;
         $csv       = '';
 
-        if (is_array($data) && isset($data[0]) && (is_array($data[0]) || ($data[0] instanceof \ArrayObject)) && ($fields)) {
+        if (is_array($data) && isset($data[0]) &&
+            (is_array($data[0]) || ($data[0] instanceof \ArrayObject)) && ($fields)) {
             $csv .= self::getFieldHeaders((array)$data[0], $delimiter, $omit);
         }
 
@@ -371,7 +414,8 @@ class Csv
                 if (strpos($val, $enclosure) !== false) {
                     $val = str_replace($enclosure, $escape . $enclosure, $val);
                 }
-                if ((strpos($val, $delimiter) !== false) || (strpos($val, "\n") !== false) || (strpos($val, $escape . $enclosure) !== false)) {
+                if ((strpos($val, $delimiter) !== false) || (strpos($val, "\n") !== false) ||
+                    (strpos($val, $escape . $enclosure) !== false)) {
                     $val = $enclosure . $val . $enclosure;
                 }
                 $rowAry[] = $val;
