@@ -203,15 +203,13 @@ class CsvTest extends TestCase
     public function testWriteToFile()
     {
         $data = [
-            'my_table' => [
-                [
-                    'first_name' => 'Bob',
-                    'last_name'  => 'Smith'
-                ],
-                [
-                    'first_name' => 'Jane',
-                    'last_name'  => 'Smith'
-                ]
+            [
+                'first_name' => 'Bob',
+                'last_name'  => 'Smith'
+            ],
+            [
+                'first_name' => 'Jane',
+                'last_name'  => 'Smith'
             ]
         ];
         $string = new Csv($data);
@@ -219,34 +217,54 @@ class CsvTest extends TestCase
         $this->assertFileExists(__DIR__ . '/tmp/test.csv');
     }
 
-
-    public function testAppendToFileException()
+    public function testAppendDataToFileExistsException()
     {
         $this->expectException('Pop\Csv\Exception');
         $data = [
-            'my_table' => [
-                [
-                    'first_name' => 'John'
-                ]
+            [
+                'first_name' => 'John'
             ]
         ];
 
-        Csv::appendToFile(__DIR__ . '/tmp/test.csv', $data);
+        Csv::appendDataToFile(__DIR__ . '/tmp/bad.csv', $data);
     }
 
+
+    public function testAppendDataToFileHeadersException()
+    {
+        $this->expectException('Pop\Csv\Exception');
+        $data = [
+            [
+                'first_name' => 'John'
+            ]
+        ];
+
+        Csv::appendDataToFile(__DIR__ . '/tmp/test.csv', $data);
+    }
+
+    public function testAppendToFileExistsException()
+    {
+        $this->expectException('Pop\Csv\Exception');
+        $data = [
+            [
+                'first_name' => 'John',
+                'last_name'  => 'Smith'
+            ]
+        ];
+
+        Csv::appendRowToFile(__DIR__ . '/tmp/bad.csv', $data);
+    }
 
     public function testAppendToFile()
     {
         $data = [
-            'my_table' => [
-                [
-                    'first_name' => 'John',
-                    'last_name'  => 'Smith'
-                ]
+            [
+                'first_name' => 'John',
+                'last_name'  => 'Smith'
             ]
         ];
 
-        Csv::appendToFile(__DIR__ . '/tmp/test.csv', $data);
+        Csv::appendDataToFile(__DIR__ . '/tmp/test.csv', $data);
         $csv = Csv::loadFile(__DIR__ . '/tmp/test.csv');
         $this->assertEquals(3, count($csv->getData()));
 

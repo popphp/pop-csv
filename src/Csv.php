@@ -314,14 +314,34 @@ class Csv
      * @param  boolean $validate
      * @return void
      */
-    public static function appendToFile($file, $data, array $options = [], $validate = true)
+    public static function appendDataToFile($file, $data, array $options = [], $validate = true)
+    {
+        if (!file_exists($file)) {
+            throw new Exception("Error: The file '" . $file . "' does not exist.");
+        }
+
+        foreach ($data as $row) {
+            self::appendRowToFile($file, $row, $options, $validate);
+        }
+    }
+
+    /**
+     * Append additional CSV row of data to a pre-existing file
+     *
+     * @param  string  $file
+     * @param  array   $row
+     * @param  array   $options
+     * @param  boolean $validate
+     * @return void
+     */
+    public static function appendRowToFile($file, array $row, array $options = [], $validate = true)
     {
         if (!file_exists($file)) {
             throw new Exception("Error: The file '" . $file . "' does not exist.");
         }
 
         if ($validate) {
-            $keys    = array_keys($data);
+            $keys    = array_keys($row);
             $headers = array_map(
                 function($value) { return str_replace('"', '', $value);}, explode(',', trim(fgets(fopen($file, 'r'))))
             );
@@ -333,7 +353,7 @@ class Csv
 
         $options = self::processOptions($options);
         $csvRow  = self::serializeRow(
-            (array)$data, [], $options['delimiter'], $options['enclosure'],
+            (array)$row, [], $options['delimiter'], $options['enclosure'],
             $options['escape'], $options['newline'], $options['limit']
         );
 
