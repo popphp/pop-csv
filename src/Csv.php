@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2019 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2020 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,9 @@ namespace Pop\Csv;
  * @category   Pop
  * @package    Pop\Csv
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2019 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2020 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    3.1.0
+ * @version    3.1.5
  */
 class Csv
 {
@@ -51,10 +51,10 @@ class Csv
             // If data is a file
             if (is_string($data) && (stripos($data, '.csv') !== false) && file_exists($data)) {
                 $this->string = file_get_contents($data);
-                // Else, if it's just data
+            // Else, if it's just data
             } else if (!is_string($data)) {
                 $this->data = $data;
-                // Else if it's a string or stream of data
+            // Else if it's a string or stream of data
             } else {
                 $this->string = $data;
             }
