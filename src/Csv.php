@@ -392,12 +392,13 @@ class Csv
             $omit = [];
         }
 
-        $options = self::processOptions($options);
-        $csv     = '';
+        $options  = self::processOptions($options);
+        $csv      = '';
+        $firstKey = array_keys($data)[0];
 
-        if (is_array($data) && isset($data[0]) &&
-            (is_array($data[0]) || ($data[0] instanceof \ArrayObject)) && ($options['fields'])) {
-            $csv .= self::getFieldHeaders((array)$data[0], $options['delimiter'], $omit);
+        if (is_array($data) && isset($data[$firstKey]) &&
+            (is_array($data[$firstKey]) || ($data[$firstKey] instanceof \ArrayObject)) && ($options['fields'])) {
+            $csv .= self::getFieldHeaders((array)$data[$firstKey], $options['delimiter'], $omit);
         }
 
         // Initialize and clean the field values.
