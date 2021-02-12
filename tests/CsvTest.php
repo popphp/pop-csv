@@ -90,7 +90,7 @@ class CsvTest extends TestCase
         $csv = new Csv();
         $csv->setString(file_get_contents(__DIR__ . '/tmp/data.csv'));
         $csv->setData($data);
-        $this->assertContains('testuser1', $csv->getString());
+        $this->assertStringContainsString('testuser1', $csv->getString());
         $this->assertEquals('Bob', $csv->getData()[0]['first_name']);
     }
 
@@ -99,7 +99,7 @@ class CsvTest extends TestCase
         $csv = new Csv(__DIR__ . '/tmp/data.csv');
         $csv->unserialize();
         $this->assertEquals('testuser1', $csv->getData()[0]['username']);
-        $this->assertContains('testuser1', $csv->getString());
+        $this->assertStringContainsString('testuser1', $csv->getString());
         $this->assertTrue($csv->isSerialized());
         $this->assertTrue($csv->isUnserialized());
     }
@@ -113,7 +113,7 @@ class CsvTest extends TestCase
         $this->assertEquals('testuser1', $data1Ary[0]['username']);
         $this->assertEquals('testuser1', $data2Ary[0]['username']);
         $string = new Csv($data1Ary);
-        $this->assertContains('testuser1,testuser1@test.com', $string->serialize());
+        $this->assertStringContainsString('testuser1,testuser1@test.com', $string->serialize());
     }
 
     public function testSerializeWithAssociativeArray()
@@ -135,7 +135,7 @@ class CsvTest extends TestCase
             ]
         ];
         $string = new Csv($data);
-        $this->assertContains('Bob,"Smith, III"', (string)$string);
+        $this->assertStringContainsString('Bob,"Smith, III"', (string)$string);
     }
 
     public function testOmit()
@@ -156,7 +156,7 @@ class CsvTest extends TestCase
         ];
         $string = new Csv($data);
         $csvString = $string->serialize(['omit' => 'first_name']);
-        $this->assertNotContains('Bob', $csvString);
+        $this->assertStringNotContainsString('Bob', $csvString);
     }
 
     public function testNewline()
@@ -284,7 +284,7 @@ class CsvTest extends TestCase
         ob_start();
         $data->outputToHttp('test.csv', false);
         $result = ob_get_clean();
-        $this->assertContains('foo', $result);
+        $this->assertStringContainsString('foo', $result);
     }
 
 
@@ -296,7 +296,7 @@ class CsvTest extends TestCase
         ob_start();
         Csv::outputDataToHttp([['foo' => 'bar']], [], 'test.csv', false);
         $result = ob_get_clean();
-        $this->assertContains('foo', $result);
+        $this->assertStringContainsString('foo', $result);
     }
 
 }

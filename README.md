@@ -1,7 +1,7 @@
 pop-csv
 =======
 
-[![Build Status](https://travis-ci.org/popphp/pop-csv.svg?branch=master)](https://travis-ci.org/popphp/pop-csv)
+[![Build Status](https://github.com/popphp/pop-csv/workflows/phpunit/badge.svg)](https://github.com/popphp/pop-csv/actions)
 [![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-csv)](http://cc.popphp.org/pop-csv/)
 
 
