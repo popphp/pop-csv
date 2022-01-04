@@ -71,6 +71,29 @@ class CsvTest extends TestCase
         }
     }
 
+    public function testWriteTemplateToFile()
+    {
+        $data = [
+            [
+                [
+                    'first_name' => 'Bob',
+                    'last_name'  => 'Smith'
+                ],
+                [
+                    'first_name' => 'Jane',
+                    'last_name'  => 'Smith'
+                ]
+            ]
+        ];
+
+        Csv::writeTemplateToFile($data, __DIR__ . '/tmp/template.csv');
+        $this->assertFileExists(__DIR__ . '/tmp/template.csv');
+
+        if (file_exists(__DIR__ . '/tmp/template.csv')) {
+            unlink(__DIR__ . '/tmp/template.csv');
+        }
+    }
+
     public function testSetters()
     {
         $data = [
@@ -287,14 +310,24 @@ class CsvTest extends TestCase
         $this->assertStringContainsString('foo', $result);
     }
 
+    /**
+     * @runInSeparateProcess
+     */
+    public function testOutputToHttpData()
+    {
+        ob_start();
+        Csv::outputDataToHttp([['foo' => 'bar']], [], 'test.csv', false);
+        $result = ob_get_clean();
+        $this->assertStringContainsString('foo', $result);
+    }
 
     /**
      * @runInSeparateProcess
      */
-    public function testOutputDataToHttp()
+    public function testOutputTemplateToHttp()
     {
         ob_start();
-        Csv::outputDataToHttp([['foo' => 'bar']], [], 'test.csv', false);
+        Csv::outputTemplateToHttp([['foo' => 'bar']], 'template.csv', false);
         $result = ob_get_clean();
         $this->assertStringContainsString('foo', $result);
     }

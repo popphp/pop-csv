@@ -134,6 +134,21 @@ class Csv
     /**
      * Write data to file
      *
+     * @param  array  $data
+     * @param  string $to
+     * @param  string $delimiter
+     * @param  array  $omit
+     * @return void
+     */
+    public static function writeTemplateToFile(array $data, $to, $delimiter = ',', array $omit = [])
+    {
+        $csv = new self($data);
+        $csv->writeBlankFile($to, $delimiter, $omit);
+    }
+
+    /**
+     * Write data to file
+     *
      * @param  array   $data
      * @param  array   $options
      * @param  string  $filename
@@ -148,6 +163,25 @@ class Csv
         $csv = new self($data);
         $csv->serialize($options);
         $csv->outputToHttp($filename, $forceDownload, $headers);
+    }
+
+    /**
+     * Write data to file
+     *
+     * @param  array   $data
+     * @param  string  $filename
+     * @param  boolean $forceDownload
+     * @param  array   $headers
+     * @param  string  $delimiter
+     * @param  array   $omit
+     * @return void
+     */
+    public static function outputTemplateToHttp(
+        array $data, $filename = 'pop-data-template.csv', $forceDownload = true, array $headers = [], $delimiter = ',', array $omit = []
+    )
+    {
+        $csv = new self($data);
+        $csv->outputBlankFileToHttp($filename, $forceDownload, $headers, $delimiter, $omit);
     }
 
     /**
@@ -271,6 +305,45 @@ class Csv
             $this->serialize();
         }
 
+        $this->prepareHttp($filename, $forceDownload, $headers);
+
+        echo $this->string;
+    }
+
+    /**
+     * Output CSV headers only in a blank file to HTTP
+     *
+     * @param  string  $filename
+     * @param  boolean $forceDownload
+     * @param  array   $headers
+     * @param  string  $delimiter
+     * @param  array   $omit
+     * @throws Exception
+     * @return void
+     */
+    public function outputBlankFileToHttp($filename = 'pop-data.csv', $forceDownload = true, array $headers = [], $delimiter = ',', array $omit = [])
+    {
+        // Attempt to serialize data if it hasn't been done yet
+        if ((null === $this->string) && (null !== $this->data) && isset($this->data[0])) {
+            $fieldHeaders = self::getFieldHeaders($this->data[0], $delimiter, $omit);
+        } else {
+            throw new Exception('Error: The data has not been set.');
+        }
+
+        $this->prepareHttp($filename, $forceDownload, $headers);
+        echo $fieldHeaders;
+    }
+
+    /**
+     * Prepare output to HTTP
+     *
+     * @param  string  $filename
+     * @param  boolean $forceDownload
+     * @param  array   $headers
+     * @return void
+     */
+    public function prepareHttp($filename = 'pop-data.csv', $forceDownload = true, array $headers = [])
+    {
         if (!isset($headers['Content-Type'])) {
             $headers['Content-Type'] = 'text/csv';
         }
@@ -285,8 +358,6 @@ class Csv
                 header($name . ': ' . $value);
             }
         }
-
-        echo $this->string;
     }
 
     /**
@@ -306,12 +377,32 @@ class Csv
     }
 
     /**
+     * Output CSV headers only to a blank file
+     *
+     * @param  string $to
+     * @param  string $delimiter
+     * @param  array  $omit
+     * @throws Exception
+     * @return void
+     */
+    public function writeBlankFile($to, $delimiter = ',', array $omit = [])
+    {
+        // Attempt to get field headers and output file
+        if ((null === $this->string) && (null !== $this->data) && isset($this->data[0])) {
+            file_put_contents($to, self::getFieldHeaders($this->data[0], $delimiter, $omit));
+        } else {
+            throw new Exception('Error: The data has not been set.');
+        }
+    }
+
+    /**
      * Append additional CSV data to a pre-existing file
      *
      * @param  string  $file
      * @param  array   $data
      * @param  array   $options
      * @param  boolean $validate
+     * @throws Exception
      * @return void
      */
     public static function appendDataToFile($file, $data, array $options = [], $validate = true)
