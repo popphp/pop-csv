@@ -1,6 +1,6 @@
 <?php
 
-namespace Pop\Data\Test;
+namespace Pop\Csv\Test;
 
 use Pop\Csv\Csv;
 use PHPUnit\Framework\TestCase;
@@ -294,6 +294,20 @@ class CsvTest extends TestCase
         if (file_exists(__DIR__ . '/tmp/test.csv')) {
             unlink(__DIR__ . '/tmp/test.csv');
         }
+    }
+
+    public function testWriteBlankFileException()
+    {
+        $this->expectException('Pop\Csv\Exception');
+        $csv = new Csv();
+        $csv->writeBlankFile('test.csv');
+    }
+
+    public function testOutputBlankFileException()
+    {
+        $this->expectException('Pop\Csv\Exception');
+        $csv = new Csv();
+        $csv->outputBlankFileToHttp();
     }
 
     /**

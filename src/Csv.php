@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,9 @@ namespace Pop\Csv;
  * @category   Pop
  * @package    Pop\Csv
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    3.2.0
+ * @version    4.0.0
  */
 class Csv
 {
@@ -30,13 +30,13 @@ class Csv
      * CSV data in PHP
      * @var mixed
      */
-    protected $data = null;
+    protected mixed $data = null;
 
     /**
      * CSV string
-     * @var string
+     * @var ?string
      */
-    protected $string = null;
+    protected ?string $string = null;
 
     /**
      * Constructor
@@ -45,9 +45,9 @@ class Csv
      *
      * @param  mixed $data
      */
-    public function __construct($data = null)
+    public function __construct(mixed $data = null)
     {
-        if (null !== $data) {
+        if ($data !== null) {
             // If data is a file
             if (is_string($data) && (stripos($data, '.csv') !== false) && file_exists($data)) {
                 $this->string = file_get_contents($data);
@@ -66,9 +66,9 @@ class Csv
      *
      * @param  string $file
      * @param  array $options
-     * @return self
+     * @return Csv
      */
-    public static function loadFile($file, array $options = [])
+    public static function loadFile(string $file, array $options = []): Csv
     {
         $csv = new self($file);
         $csv->unserialize($options);
@@ -80,9 +80,9 @@ class Csv
      *
      * @param  string $string
      * @param  array $options
-     * @return self
+     * @return Csv
      */
-    public static function loadString($string, array $options = [])
+    public static function loadString(string $string, array $options = []): Csv
     {
         $csv = new self($string);
         $csv->unserialize($options);
@@ -94,9 +94,9 @@ class Csv
      *
      * @param  array $data
      * @param  array $options
-     * @return self
+     * @return Csv
      */
-    public static function loadData(array $data, array $options = [])
+    public static function loadData(array $data, array $options = []): Csv
     {
         $csv = new self($data);
         $csv->serialize($options);
@@ -107,10 +107,10 @@ class Csv
      * Load CSV file and get data
      *
      * @param  string $file
-     * @param  array $options
+     * @param  array  $options
      * @return array
      */
-    public static function getDataFromFile($file, array $options = [])
+    public static function getDataFromFile(string $file, array $options = []): array
     {
         $csv = new self($file);
         return $csv->unserialize($options);
@@ -124,7 +124,7 @@ class Csv
      * @param  array  $options
      * @return void
      */
-    public static function writeDataToFile(array $data, $to, array $options = [])
+    public static function writeDataToFile(array $data, string $to, array $options = []): void
     {
         $csv = new self($data);
         $csv->serialize($options);
@@ -138,9 +138,10 @@ class Csv
      * @param  string $to
      * @param  string $delimiter
      * @param  array  $omit
+     * @throws Exception
      * @return void
      */
-    public static function writeTemplateToFile(array $data, $to, $delimiter = ',', array $omit = [])
+    public static function writeTemplateToFile(array $data, string $to, string $delimiter = ',', array $omit = []): void
     {
         $csv = new self($data);
         $csv->writeBlankFile($to, $delimiter, $omit);
@@ -149,16 +150,16 @@ class Csv
     /**
      * Write data to file
      *
-     * @param  array   $data
-     * @param  array   $options
-     * @param  string  $filename
-     * @param  boolean $forceDownload
-     * @param  array   $headers
+     * @param  array  $data
+     * @param  array  $options
+     * @param  string $filename
+     * @param  bool   $forceDownload
+     * @param  array  $headers
      * @return void
      */
     public static function outputDataToHttp(
-        array $data, array $options = [], $filename = 'pop-data.csv', $forceDownload = true, array $headers = []
-    )
+        array $data, array $options = [], string $filename = 'pop-data.csv', bool $forceDownload = true, array $headers = []
+    ): void
     {
         $csv = new self($data);
         $csv->serialize($options);
@@ -168,16 +169,18 @@ class Csv
     /**
      * Write data to file
      *
-     * @param  array   $data
-     * @param  string  $filename
-     * @param  boolean $forceDownload
-     * @param  array   $headers
-     * @param  string  $delimiter
-     * @param  array   $omit
+     * @param  array  $data
+     * @param  string $filename
+     * @param  bool   $forceDownload
+     * @param  array  $headers
+     * @param  string $delimiter
+     * @param  array  $omit
+     * @throws Exception
      * @return void
      */
     public static function outputTemplateToHttp(
-        array $data, $filename = 'pop-data-template.csv', $forceDownload = true, array $headers = [], $delimiter = ',', array $omit = []
+        array $data, string $filename = 'pop-data-template.csv', bool $forceDownload = true,
+        array $headers = [], string $delimiter = ',', array $omit = []
     )
     {
         $csv = new self($data);
@@ -190,7 +193,7 @@ class Csv
      * @param  array $options
      * @return array
      */
-    public static function processOptions(array $options)
+    public static function processOptions(array $options): array
     {
         $options['delimiter'] = (isset($options['delimiter'])) ? $options['delimiter']     : ',';
         $options['enclosure'] = (isset($options['enclosure'])) ? $options['enclosure']     : '"';
@@ -208,7 +211,7 @@ class Csv
      * @param  array $options
      * @return string
      */
-    public function serialize(array $options = [])
+    public function serialize(array $options = []): string
     {
         $this->string = self::serializeData($this->data, $options);
         return $this->string;
@@ -220,7 +223,7 @@ class Csv
      * @param  array  $options
      * @return mixed
      */
-    public function unserialize(array $options = [])
+    public function unserialize(array $options = []): mixed
     {
         $this->data = self::unserializeString($this->string, $options);
         return $this->data;
@@ -232,7 +235,7 @@ class Csv
      * @param  array $data
      * @return Csv
      */
-    public function setData(array $data)
+    public function setData(array $data): Csv
     {
         $this->data = $data;
         return $this;
@@ -243,7 +246,7 @@ class Csv
      *
      * @return array
      */
-    public function getData()
+    public function getData(): array
     {
         return $this->data;
     }
@@ -254,7 +257,7 @@ class Csv
      * @param  string $string
      * @return Csv
      */
-    public function setString($string)
+    public function setString(string $string): Csv
     {
         $this->string = $string;
         return $this;
@@ -265,7 +268,7 @@ class Csv
      *
      * @return string
      */
-    public function getString()
+    public function getString(): string
     {
         return $this->string;
     }
@@ -273,35 +276,35 @@ class Csv
     /**
      * Check if data was serialized
      *
-     * @return boolean
+     * @return bool
      */
-    public function isSerialized()
+    public function isSerialized(): bool
     {
-        return (null !== $this->string);
+        return ($this->string !== null);
     }
 
     /**
      * Check if string was unserialized
      *
-     * @return boolean
+     * @return bool
      */
-    public function isUnserialized()
+    public function isUnserialized(): bool
     {
-        return (null !== $this->data);
+        return ($this->data !== null);
     }
 
     /**
      * Output CSV string data to HTTP
      *
-     * @param  string  $filename
-     * @param  boolean $forceDownload
-     * @param  array   $headers
+     * @param  string $filename
+     * @param  bool   $forceDownload
+     * @param  array  $headers
      * @return void
      */
-    public function outputToHttp($filename = 'pop-data.csv', $forceDownload = true, array $headers = [])
+    public function outputToHttp(string $filename = 'pop-data.csv', bool $forceDownload = true, array $headers = []): void
     {
         // Attempt to serialize data if it hasn't been done yet
-        if ((null === $this->string) && (null !== $this->data)) {
+        if (($this->string === null) && ($this->data !== null)) {
             $this->serialize();
         }
 
@@ -313,18 +316,20 @@ class Csv
     /**
      * Output CSV headers only in a blank file to HTTP
      *
-     * @param  string  $filename
-     * @param  boolean $forceDownload
-     * @param  array   $headers
-     * @param  string  $delimiter
-     * @param  array   $omit
+     * @param  string $filename
+     * @param  bool   $forceDownload
+     * @param  array  $headers
+     * @param  string $delimiter
+     * @param  array  $omit
      * @throws Exception
      * @return void
      */
-    public function outputBlankFileToHttp($filename = 'pop-data.csv', $forceDownload = true, array $headers = [], $delimiter = ',', array $omit = [])
+    public function outputBlankFileToHttp(
+        string $filename = 'pop-data.csv', bool $forceDownload = true, array $headers = [], string $delimiter = ',', array $omit = []
+    ): void
     {
         // Attempt to serialize data if it hasn't been done yet
-        if ((null === $this->string) && (null !== $this->data) && isset($this->data[0])) {
+        if (($this->string === null) && ($this->data !== null) && isset($this->data[0])) {
             $fieldHeaders = self::getFieldHeaders($this->data[0], $delimiter, $omit);
         } else {
             throw new Exception('Error: The data has not been set.');
@@ -337,12 +342,12 @@ class Csv
     /**
      * Prepare output to HTTP
      *
-     * @param  string  $filename
-     * @param  boolean $forceDownload
-     * @param  array   $headers
+     * @param  string $filename
+     * @param  bool   $forceDownload
+     * @param  array  $headers
      * @return void
      */
-    public function prepareHttp($filename = 'pop-data.csv', $forceDownload = true, array $headers = [])
+    public function prepareHttp(string $filename = 'pop-data.csv', bool $forceDownload = true, array $headers = []): void
     {
         if (!isset($headers['Content-Type'])) {
             $headers['Content-Type'] = 'text/csv';
@@ -366,10 +371,10 @@ class Csv
      * @param  string $to
      * @return void
      */
-    public function writeToFile($to)
+    public function writeToFile(string $to): void
     {
         // Attempt to serialize data if it hasn't been done yet
-        if ((null === $this->string) && (null !== $this->data)) {
+        if (($this->string === null) && ($this->data !== null)) {
             $this->serialize();
         }
 
@@ -385,10 +390,10 @@ class Csv
      * @throws Exception
      * @return void
      */
-    public function writeBlankFile($to, $delimiter = ',', array $omit = [])
+    public function writeBlankFile(string $to, string $delimiter = ',', array $omit = []): void
     {
         // Attempt to get field headers and output file
-        if ((null === $this->string) && (null !== $this->data) && isset($this->data[0])) {
+        if (($this->string === null) && ($this->data !== null) && isset($this->data[0])) {
             file_put_contents($to, self::getFieldHeaders($this->data[0], $delimiter, $omit));
         } else {
             throw new Exception('Error: The data has not been set.');
@@ -398,14 +403,14 @@ class Csv
     /**
      * Append additional CSV data to a pre-existing file
      *
-     * @param  string  $file
-     * @param  array   $data
-     * @param  array   $options
-     * @param  boolean $validate
+     * @param  string $file
+     * @param  array  $data
+     * @param  array  $options
+     * @param  bool   $validate
      * @throws Exception
      * @return void
      */
-    public static function appendDataToFile($file, $data, array $options = [], $validate = true)
+    public static function appendDataToFile(string $file, array $data, array $options = [], bool $validate = true): void
     {
         if (!file_exists($file)) {
             throw new Exception("Error: The file '" . $file . "' does not exist.");
@@ -419,13 +424,14 @@ class Csv
     /**
      * Append additional CSV row of data to a pre-existing file
      *
-     * @param  string  $file
-     * @param  array   $row
-     * @param  array   $options
-     * @param  boolean $validate
+     * @param  string $file
+     * @param  array  $row
+     * @param  array  $options
+     * @param  bool   $validate
+     * @throws Exception
      * @return void
      */
-    public static function appendRowToFile($file, array $row, array $options = [], $validate = true)
+    public static function appendRowToFile(string $file, array $row, array $options = [], bool $validate = true): void
     {
         if (!file_exists($file)) {
             throw new Exception("Error: The file '" . $file . "' does not exist.");
@@ -434,7 +440,7 @@ class Csv
         if ($validate) {
             $keys    = array_keys($row);
             $headers = array_map(
-                function($value) { return str_replace('"', '', $value);}, explode(',', trim(fgets(fopen($file, 'r'))))
+                function($value) { return str_replace('"', '', $value); }, explode(',', trim(fgets(fopen($file, 'r'))))
             );
 
             if ($keys != $headers) {
@@ -458,7 +464,7 @@ class Csv
      * @param  array $options
      * @return string
      */
-    public static function serializeData($data, array $options = [])
+    public static function serializeData(mixed $data, array $options = []): string
     {
         $keys    = array_keys($data);
         $isAssoc = false;
@@ -510,7 +516,7 @@ class Csv
      * @param  array  $options
      * @return array
      */
-    public static function unserializeString($string, array $options = [])
+    public static function unserializeString(string $string, array $options = []): array
     {
         $options   = self::processOptions($options);
         $lines     = preg_split("/((\r?\n)|(\r\n?))/", $string);
@@ -547,20 +553,21 @@ class Csv
     }
 
     /**
-     * Serialize single row of data;
+     * Serialize single row of data
      *
-     * @param  array   $value
-     * @param  array   $omit
-     * @param  string  $delimiter
-     * @param  string  $enclosure
-     * @param  string  $escape
-     * @param  boolean $newline
-     * @param  int     $limit
+     * @param  array  $value
+     * @param  array  $omit
+     * @param  string $delimiter
+     * @param  string $enclosure
+     * @param  string $escape
+     * @param  bool   $newline
+     * @param  int    $limit
      * @return string
      */
     public static function serializeRow(
-        array $value, array $omit = [], $delimiter = ',', $enclosure = '"', $escape = '"', $newline = true, $limit = 0
-    )
+        array $value, array $omit = [], string $delimiter = ',', string $enclosure = '"',
+        string $escape = '"', bool $newline = true, int $limit = 0
+    ): string
     {
         $rowAry = [];
         foreach ($value as $key => $val) {
@@ -571,11 +578,11 @@ class Csv
                 if ((int)$limit > 0) {
                     $val = substr($val, 0, (int)$limit);
                 }
-                if (strpos($val, $enclosure) !== false) {
+                if (str_contains($val, $enclosure)) {
                     $val = str_replace($enclosure, $escape . $enclosure, $val);
                 }
-                if ((strpos($val, $delimiter) !== false) || (strpos($val, "\n") !== false) ||
-                    (strpos($val, $escape . $enclosure) !== false)) {
+                if ((str_contains($val, $delimiter)) || (str_contains($val, "\n")) ||
+                    (str_contains($val, $escape . $enclosure))) {
                     $val = $enclosure . $val . $enclosure;
                 }
                 $rowAry[] = $val;
@@ -592,7 +599,7 @@ class Csv
      * @param  array  $omit
      * @return string
      */
-    public static function getFieldHeaders($data, $delimiter = ',', array $omit = [])
+    public static function getFieldHeaders(mixed $data, string $delimiter = ',', array $omit = []): string
     {
         $headers    = array_keys($data);
         $headersAry = [];
@@ -608,9 +615,9 @@ class Csv
      * Determine if the string is valid CSV
      *
      * @param  string $string
-     * @return boolean
+     * @return bool
      */
-    public static function isValid($string)
+    public static function isValid(string $string): bool
     {
         $lines  = preg_split("/((\r?\n)|(\r\n?))/", $string);
         $fields = [];
@@ -625,10 +632,10 @@ class Csv
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         // Attempt to serialize data if it hasn't been done yet
-        if ((null === $this->string) && (null !== $this->data)) {
+        if (($this->string === null) && ($this->data !== null)) {
             $this->serialize();
         }
 
