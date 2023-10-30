@@ -81,12 +81,13 @@ Where serializing or unserializing CSV data, there are a set of options availabl
 
 ```php
 $options = [
-    'delimiter' => ','  // Delimiter, defaults to ',' - could be "\t" or something else
-    'enclosure' => '"'  // Default string enclosure, i.e. "my data","other data"
-    'escape'    => '"'  // String character to escape in the data, i.e. "my ""data"" here"
-    'fields'    => true // Include the field names in the first row 
-    'newline'   => true // Allow newlines in a data cell. Set to false to trim them
-    'limit'     => 0    // Character limit of a data cell. 0 means no limit
+    'omit'      => ['id'] // An array of fields to omit from displaying
+    'delimiter' => ','    // Delimiter defaults to ',' - could be "\t" or something else
+    'enclosure' => '"'    // Default string enclosure, i.e. "my data","other data"
+    'escape'    => '"'    // String character to escape in the data, i.e. "my ""data"" here"
+    'fields'    => true   // Include the field names in the first row 
+    'newline'   => true   // Allow newlines in a data cell. Set to false to trim them
+    'limit'     => 0      // Character limit of a data cell. 0 means no limit
 ];
 ```
 
