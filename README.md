@@ -17,6 +17,7 @@ pop-csv
 Overview
 --------
 `pop-csv` provides a streamlined way to work with PHP data and the CSV format.
+
 It is a component of the [Pop PHP Framework](http://www.popphp.org/).
 
 Install
