@@ -161,7 +161,7 @@ class CsvTest extends TestCase
         $this->assertStringContainsString('Bob,"Smith, III"', (string)$string);
     }
 
-    public function testOmit()
+    public function testExclude()
     {
         $data = [
             [
@@ -178,8 +178,29 @@ class CsvTest extends TestCase
             ]
         ];
         $string = new Csv($data);
-        $csvString = $string->serialize(['omit' => 'first_name']);
+        $csvString = $string->serialize(['exclude' => 'first_name']);
         $this->assertStringNotContainsString('Bob', $csvString);
+    }
+
+    public function testInclude()
+    {
+        $data = [
+            [
+                'first_name' => 'Bob',
+                'last_name'  => 'Smith, III'
+            ],
+            [
+                'first_name' => 'Jane',
+                'last_name'  => 'Smith "Janey"'
+            ],
+            [
+                'first_name' => 'Jim',
+                'last_name'  => 'Smith, Jr. "Junior"'
+            ]
+        ];
+        $string = new Csv($data);
+        $csvString = $string->serialize(['include' => 'first_name']);
+        $this->assertStringContainsString('Bob', $csvString);
     }
 
     public function testNewline()

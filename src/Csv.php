@@ -137,14 +137,17 @@ class Csv
      * @param  array  $data
      * @param  string $to
      * @param  string $delimiter
-     * @param  array  $omit
-     * @throws Exception
+     * @param  array  $exclude
+     * @param  array  $include
      * @return void
+     *@throws Exception
      */
-    public static function writeTemplateToFile(array $data, string $to, string $delimiter = ',', array $omit = []): void
+    public static function writeTemplateToFile(
+        array $data, string $to, string $delimiter = ',', array $exclude = [], array $include = []
+    ): void
     {
         $csv = new self($data);
-        $csv->writeBlankFile($to, $delimiter, $omit);
+        $csv->writeBlankFile($to, $delimiter, $exclude, $include);
     }
 
     /**
@@ -174,17 +177,17 @@ class Csv
      * @param  bool   $forceDownload
      * @param  array  $headers
      * @param  string $delimiter
-     * @param  array  $omit
+     * @param  array  $exclude
      * @throws Exception
      * @return void
      */
     public static function outputTemplateToHttp(
         array $data, string $filename = 'pop-data-template.csv', bool $forceDownload = true,
-        array $headers = [], string $delimiter = ',', array $omit = []
+        array $headers = [], string $delimiter = ',', array $exclude = []
     )
     {
         $csv = new self($data);
-        $csv->outputBlankFileToHttp($filename, $forceDownload, $headers, $delimiter, $omit);
+        $csv->outputBlankFileToHttp($filename, $forceDownload, $headers, $delimiter, $exclude);
     }
 
     /**
@@ -320,17 +323,17 @@ class Csv
      * @param  bool   $forceDownload
      * @param  array  $headers
      * @param  string $delimiter
-     * @param  array  $omit
+     * @param  array  $exclude
      * @throws Exception
      * @return void
      */
     public function outputBlankFileToHttp(
-        string $filename = 'pop-data.csv', bool $forceDownload = true, array $headers = [], string $delimiter = ',', array $omit = []
+        string $filename = 'pop-data.csv', bool $forceDownload = true, array $headers = [], string $delimiter = ',', array $exclude = []
     ): void
     {
         // Attempt to serialize data if it hasn't been done yet
         if (($this->string === null) && ($this->data !== null) && isset($this->data[0])) {
-            $fieldHeaders = self::getFieldHeaders($this->data[0], $delimiter, $omit);
+            $fieldHeaders = self::getFieldHeaders($this->data[0], $delimiter, $exclude);
         } else {
             throw new Exception('Error: The data has not been set.');
         }
@@ -386,15 +389,16 @@ class Csv
      *
      * @param  string $to
      * @param  string $delimiter
-     * @param  array  $omit
-     * @throws Exception
+     * @param  array  $exclude
+     * @param  array  $include
      * @return void
+     *@throws Exception
      */
-    public function writeBlankFile(string $to, string $delimiter = ',', array $omit = []): void
+    public function writeBlankFile(string $to, string $delimiter = ',', array $exclude = [], array $include = []): void
     {
         // Attempt to get field headers and output file
         if (($this->string === null) && ($this->data !== null) && isset($this->data[0])) {
-            file_put_contents($to, self::getFieldHeaders($this->data[0], $delimiter, $omit));
+            file_put_contents($to, self::getFieldHeaders($this->data[0], $delimiter, $exclude, $include));
         } else {
             throw new Exception('Error: The data has not been set.');
         }
@@ -450,7 +454,7 @@ class Csv
 
         $options = self::processOptions($options);
         $csvRow  = self::serializeRow(
-            (array)$row, [], $options['delimiter'], $options['enclosure'],
+            (array)$row, [], [], $options['delimiter'], $options['enclosure'],
             $options['escape'], $options['newline'], $options['limit']
         );
 
@@ -483,10 +487,16 @@ class Csv
             $data = $newData;
         }
 
-        if (isset($options['omit'])) {
-            $omit = (!is_array($options['omit'])) ? [$options['omit']] : $options['omit'];
+        if (isset($options['exclude'])) {
+            $exclude = (!is_array($options['exclude'])) ? [$options['exclude']] : $options['exclude'];
         } else {
-            $omit = [];
+            $exclude = [];
+        }
+
+        if (isset($options['include'])) {
+            $include = (!is_array($options['include'])) ? [$options['include']] : $options['include'];
+        } else {
+            $include = [];
         }
 
         $options  = self::processOptions($options);
@@ -495,13 +505,13 @@ class Csv
 
         if (is_array($data) && isset($data[$firstKey]) &&
             (is_array($data[$firstKey]) || ($data[$firstKey] instanceof \ArrayObject)) && ($options['fields'])) {
-            $csv .= self::getFieldHeaders((array)$data[$firstKey], $options['delimiter'], $omit);
+            $csv .= self::getFieldHeaders((array)$data[$firstKey], $options['delimiter'], $exclude, $include);
         }
 
         // Initialize and clean the field values.
         foreach ($data as $value) {
             $csv .= self::serializeRow(
-                (array)$value, $omit, $options['delimiter'], $options['enclosure'],
+                (array)$value, $exclude, $include, $options['delimiter'], $options['enclosure'],
                 $options['escape'], $options['newline'], $options['limit']
             );
         }
@@ -556,7 +566,8 @@ class Csv
      * Serialize single row of data
      *
      * @param  array  $value
-     * @param  array  $omit
+     * @param  array  $exclude
+     * @param  array  $include
      * @param  string $delimiter
      * @param  string $enclosure
      * @param  string $escape
@@ -565,13 +576,13 @@ class Csv
      * @return string
      */
     public static function serializeRow(
-        array $value, array $omit = [], string $delimiter = ',', string $enclosure = '"',
+        array $value, array $exclude = [], array $include = [], string $delimiter = ',', string $enclosure = '"',
         string $escape = '"', bool $newline = true, int $limit = 0
     ): string
     {
         $rowAry = [];
         foreach ($value as $key => $val) {
-            if (!in_array($key, $omit)) {
+            if (!in_array($key, $exclude) && (empty($include) || in_array($key, $include))) {
                 if (!$newline) {
                     $val = str_replace(["\n", "\r"], [" ", " "], $val);
                 }
@@ -596,15 +607,16 @@ class Csv
      *
      * @param  mixed  $data
      * @param  string $delimiter
-     * @param  array  $omit
+     * @param  array  $exclude
+     * @param  array  $include
      * @return string
      */
-    public static function getFieldHeaders(mixed $data, string $delimiter = ',', array $omit = []): string
+    public static function getFieldHeaders(mixed $data, string $delimiter = ',', array $exclude = [], array $include = []): string
     {
         $headers    = array_keys($data);
         $headersAry = [];
         foreach ($headers as $header) {
-            if (!in_array($header, $omit)) {
+            if (!in_array($header, $exclude) && (empty($include) || in_array($header, $include))) {
                 $headersAry[] = $header;
             }
         }
