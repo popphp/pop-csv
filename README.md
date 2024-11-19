@@ -4,7 +4,6 @@ pop-csv
 [![Build Status](https://github.com/popphp/pop-csv/workflows/phpunit/badge.svg)](https://github.com/popphp/pop-csv/actions)
 [![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-csv)](http://cc.popphp.org/pop-csv/)
 
-[![Join the chat at https://popphp.slack.com](https://media.popphp.org/img/slack.svg)](https://popphp.slack.com)
 [![Join the chat at https://discord.gg/TZjgT74U7E](https://media.popphp.org/img/discord.svg)](https://discord.gg/TZjgT74U7E)
 
 * [Overview](#overview)
@@ -18,7 +17,7 @@ Overview
 --------
 `pop-csv` provides a streamlined way to work with PHP data and the CSV format.
 
-It is a component of the [Pop PHP Framework](http://www.popphp.org/).
+It is a component of the [Pop PHP Framework](https://www.popphp.org/).
 
 Install
 -------
@@ -30,7 +29,7 @@ Install `pop-csv` using Composer.
 Or, require it in your composer.json file
 
     "require": {
-        "popphp/pop-csv" : "^4.0.0"
+        "popphp/pop-csv" : "^4.1.0"
     }
 
 [Top](#pop-csv)
