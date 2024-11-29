@@ -331,9 +331,7 @@ class CsvTest extends TestCase
         $csv->outputBlankFileToHttp();
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[runInSeparateProcess]
     public function testOutputToHttp()
     {
         $data = new Csv([
@@ -345,9 +343,7 @@ class CsvTest extends TestCase
         $this->assertStringContainsString('foo', $result);
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[runInSeparateProcess]
     public function testOutputToHttpData()
     {
         ob_start();
@@ -356,9 +352,7 @@ class CsvTest extends TestCase
         $this->assertStringContainsString('foo', $result);
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[runInSeparateProcess]
     public function testOutputTemplateToHttp()
     {
         ob_start();
