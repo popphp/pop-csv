@@ -80,21 +80,58 @@ Where serializing or unserializing CSV data, there are a set of options availabl
 
 ```php
 $options = [
-    'exclude'   => ['id'] // An array of fields to exclude from displaying
-    'delimiter' => ','    // Delimiter defaults to ',' - could be "\t" or something else
-    'enclosure' => '"'    // Default string enclosure, i.e. "my data","other data"
-    'escape'    => '"'    // String character to escape in the data, i.e. "my ""data"" here"
-    'fields'    => true   // Include the field names in the first row 
-    'newline'   => true   // Allow newlines in a data cell. Set to false to trim them
-    'limit'     => 0      // Character limit of a data cell. 0 means no limit
+    'exclude'   => ['id'],    // An array of fields to exclude
+    'include'   => ['email'], // An array of fields to explicitly include, omitting all others
+    'delimiter' => ',',       // Delimiter defaults to ',' - could be "\t" or something else
+    'enclosure' => '"',       // Default string enclosure, i.e. "my data","other data"
+    'escape'    => '"',       // String character to escape in the data, i.e. "my ""data"" here"
+    'fields'    => true,      // Include the field names in the first row 
+    'newline'   => true,      // Allow newlines in a data cell. Set as false to trim them
+    'limit'     => 0,         // Character limit of a data cell. 0 means no limit
+    'map'       => [],        // Array key of a single array value to map to the data cell value
+    'columns'   => [],        // Array key of a multidimensional array value to map and join into the data cell value
 ];
 ```
 
-Conversely, `include` can be used to only include the fields in the `include` array:
+**Map/Columns Example**
+
+```text
+$users = [
+    'id'       => 1,
+    'username' => 'testuser',
+    'country'  => [
+        'name' => 'United States',
+        'code' => 'US'
+    ],
+    'roles'    => [
+        ['id' => 1, 'name' => 'Admin'],
+        ['id' => 2, 'name' => 'Staff'],
+    ]
+];
+```
+
+```text
+$options = [
+    'map' => [
+        'country' => 'code'
+    ],
+    'columns' => [
+        'roles' => 'name'
+    ]
+]
+```
 
 ```php
-$options = [
-    'include' => ['username', 'first_name', 'last_name'] // An array of fields to include from displaying
+$data      = new Pop\Csv\Csv($users);
+$csvString = $data->serialize($options);
+echo $csvString;
+```
+
+The above will output the following CSV data:
+
+```text
+id,username,country,roles
+1,testuser,US,"Admin,Staff"
 ```
 
 Pass the options array to `serialize()` or `unserialize()` methods:
