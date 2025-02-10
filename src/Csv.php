@@ -204,6 +204,8 @@ class Csv
         $options['fields']    = (isset($options['fields']))    ? (bool)$options['fields']  : true;
         $options['newline']   = (isset($options['newline']))   ? (bool)$options['newline'] : true;
         $options['limit']     = (isset($options['limit']))     ? (int)$options['limit']    : 0;
+        $options['map']       = (isset($options['map']))       ? $options['map']           : [];
+        $options['columns']   = (isset($options['columns']))   ? $options['columns']       : [];
 
         return $options;
     }
@@ -454,8 +456,8 @@ class Csv
 
         $options = self::processOptions($options);
         $csvRow  = self::serializeRow(
-            (array)$row, [], [], $options['delimiter'], $options['enclosure'],
-            $options['escape'], $options['newline'], $options['limit']
+            (array)$row, [], [], $options['delimiter'], $options['enclosure'], $options['escape'],
+            $options['newline'], $options['limit'], $options['map'], $options['columns']
         );
 
         file_put_contents($file, $csvRow, FILE_APPEND);
@@ -511,8 +513,8 @@ class Csv
         // Initialize and clean the field values.
         foreach ($data as $value) {
             $csv .= self::serializeRow(
-                (array)$value, $exclude, $include, $options['delimiter'], $options['enclosure'],
-                $options['escape'], $options['newline'], $options['limit']
+                (array)$value, $exclude, $include, $options['delimiter'], $options['enclosure'], $options['escape'],
+                $options['newline'], $options['limit'], $options['map'], $options['columns']
             );
         }
 
@@ -573,11 +575,13 @@ class Csv
      * @param  string $escape
      * @param  bool   $newline
      * @param  int    $limit
+     * @param  array  $map
+     * @param  array  $columns
      * @return string
      */
     public static function serializeRow(
         array $value, array $exclude = [], array $include = [], string $delimiter = ',', string $enclosure = '"',
-        string $escape = '"', bool $newline = true, int $limit = 0
+        string $escape = '"', bool $newline = true, int $limit = 0, array $map = [], array $columns = []
     ): string
     {
         $rowAry = [];
@@ -589,6 +593,18 @@ class Csv
                 if ((int)$limit > 0) {
                     $val = substr($val, 0, (int)$limit);
                 }
+
+                // Handle array map/column
+                if (is_array($val)) {
+                    if (!empty($val) && isset($map[$key]) && isset($val[$map[$key]])) {
+                        $val = $val[$map[$key]];
+                    } else if (!empty($val) && isset($columns[$key]) && isset($val[0]) && isset($val[0][$columns[$key]])) {
+                        $val = implode(',', array_column($val, $columns[$key]));
+                    } else {
+                        $val = null;
+                    }
+                }
+
                 if (str_contains($val, $enclosure)) {
                     $val = str_replace($enclosure, $escape . $enclosure, $val);
                 }
@@ -596,9 +612,11 @@ class Csv
                     (str_contains($val, $escape . $enclosure))) {
                     $val = $enclosure . $val . $enclosure;
                 }
+
                 $rowAry[] = $val;
             }
         }
+
         return implode($delimiter, $rowAry) . "\n";
     }
 
