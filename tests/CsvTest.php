@@ -177,8 +177,8 @@ class CsvTest extends TestCase
                 'last_name'  => 'Smith, Jr. "Junior"'
             ]
         ];
-        $string = new Csv($data);
-        $csvString = $string->serialize(['exclude' => 'first_name']);
+        $string = new Csv($data, ['exclude' => 'first_name']);
+        $csvString = $string->serialize();
         $this->assertStringNotContainsString('Bob', $csvString);
     }
 
@@ -198,9 +198,47 @@ class CsvTest extends TestCase
                 'last_name'  => 'Smith, Jr. "Junior"'
             ]
         ];
-        $string = new Csv($data);
-        $csvString = $string->serialize(['include' => 'first_name']);
+        $string = new Csv($data, ['include' => 'first_name']);
+        $csvString = $string->serialize();
         $this->assertStringContainsString('Bob', $csvString);
+    }
+
+    public function testMap()
+    {
+        $data = [
+            [
+                'username' => 'bobsmith',
+                'country'  => ['id' => 1, 'code' => 'US'],
+            ],
+            [
+                'username' => 'janesmith',
+                'country'  => ['id' => 2, 'code' => 'FR'],
+            ]
+        ];
+        $string = new Csv($data, ['map' => ['country' => 'code']]);
+        $csvString = $string->serialize();
+        $this->assertStringContainsString('username,country', $csvString);
+        $this->assertStringContainsString('bobsmith,US', $csvString);
+        $this->assertStringContainsString('janesmith,FR', $csvString);
+    }
+
+    public function testColumns()
+    {
+        $data = [
+            [
+                'username' => 'bobsmith',
+                'roles'    => [['id' => 1, 'role' => 'Admin'], ['id' => 2, 'role' => 'Editor']],
+            ],
+            [
+                'username' => 'janesmith',
+                'roles'    => [['id' => 2, 'role' => 'Editor'], ['id' => 3, 'role' => 'Staff']],
+            ]
+        ];
+        $string = new Csv($data, ['columns' => ['roles' => 'role']]);
+        $csvString = $string->serialize();
+        $this->assertStringContainsString('username,roles', $csvString);
+        $this->assertStringContainsString('bobsmith,"Admin,Editor"', $csvString);
+        $this->assertStringContainsString('janesmith,"Editor,Staff"', $csvString);
     }
 
     public function testNewline()
@@ -212,8 +250,8 @@ class CsvTest extends TestCase
                 'notes'      => "Hello What's up?\nHow are you doing?\nI'm doing fine!"
             ]
         ];
-        $string    = new Csv($data);
-        $csvString = $string->serialize(['newline' => false]);
+        $string    = new Csv($data, ['newline' => false]);
+        $csvString = $string->serialize();
 
         $data = new Csv($csvString);
         $value = $data->unserialize();
@@ -229,8 +267,8 @@ class CsvTest extends TestCase
                 'last_name'  => 'Smith'
             ]
         ];
-        $string    = new Csv($data);
-        $csvString = $string->serialize(['limit' => 2]);
+        $string    = new Csv($data, ['limit' => 2]);
+        $csvString = $string->serialize();
 
         $data = new Csv($csvString);
         $value = $data->unserialize();
@@ -299,6 +337,36 @@ class CsvTest extends TestCase
         Csv::appendRowToFile(__DIR__ . '/tmp/bad.csv', $data);
     }
 
+    public function testAppend()
+    {
+        $data = [
+            [
+                'first_name' => 'John',
+                'last_name'  => 'Smith'
+            ]
+        ];
+
+        $csv = new Csv();
+        $csv->appendData(__DIR__ . '/tmp/test.csv', $data);
+        $csv = Csv::loadFile(__DIR__ . '/tmp/test.csv');
+        $this->assertEquals(3, count($csv->getData()));
+
+    }
+
+    public function testAppendRow()
+    {
+        $data = [
+            'first_name' => 'John',
+            'last_name'  => 'Smith'
+        ];
+
+        $csv = new Csv();
+        $csv->appendRow(__DIR__ . '/tmp/test.csv', $data);
+        $csv = Csv::loadFile(__DIR__ . '/tmp/test.csv');
+        $this->assertEquals(4, count($csv->getData()));
+
+    }
+
     public function testAppendToFile()
     {
         $data = [
@@ -310,7 +378,7 @@ class CsvTest extends TestCase
 
         Csv::appendDataToFile(__DIR__ . '/tmp/test.csv', $data);
         $csv = Csv::loadFile(__DIR__ . '/tmp/test.csv');
-        $this->assertEquals(3, count($csv->getData()));
+        $this->assertEquals(5, count($csv->getData()));
 
         if (file_exists(__DIR__ . '/tmp/test.csv')) {
             unlink(__DIR__ . '/tmp/test.csv');

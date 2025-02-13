@@ -29,7 +29,7 @@ Install `pop-csv` using Composer.
 Or, require it in your composer.json file
 
     "require": {
-        "popphp/pop-csv" : "^4.1.1"
+        "popphp/pop-csv" : "^4.2.0"
     }
 
 [Top](#pop-csv)
