@@ -215,8 +215,8 @@ class CsvTest extends TestCase
                 'country'  => ['id' => 2, 'code' => 'FR'],
             ]
         ];
-        $string = new Csv($data, ['map' => ['country' => 'code']]);
-        $csvString = $string->serialize();
+        $string = new Csv($data);
+        $csvString = $string->serialize(['map' => ['country' => 'code']]);
         $this->assertStringContainsString('username,country', $csvString);
         $this->assertStringContainsString('bobsmith,US', $csvString);
         $this->assertStringContainsString('janesmith,FR', $csvString);
@@ -254,7 +254,7 @@ class CsvTest extends TestCase
         $csvString = $string->serialize();
 
         $data = new Csv($csvString);
-        $value = $data->unserialize();
+        $value = $data->unserialize(['map' => ['country' => 'code']]);
         $this->assertEquals(1, count($value));
         $this->assertEquals("Hello What's up? How are you doing? I'm doing fine!", $value[0]['notes']);
     }

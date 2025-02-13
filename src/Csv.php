@@ -100,10 +100,14 @@ class Csv
     /**
      * Serialize the data to a CSV string
      *
+     * @param  ?array $options
      * @return string
      */
-    public function serialize(): string
+    public function serialize(?array $options = null): string
     {
+        if (!empty($options)) {
+            $this->setOptions($options);
+        }
         $this->string = self::serializeData($this->data, $this->options);
         return $this->string;
     }
@@ -111,10 +115,14 @@ class Csv
     /**
      * Unserialize the string to data
      *
+     * @param  ?array $options
      * @return mixed
      */
-    public function unserialize(): mixed
+    public function unserialize(?array $options = null): mixed
     {
+        if (!empty($options)) {
+            $this->setOptions($options);
+        }
         $this->data = self::unserializeString($this->string, $this->options);
         return $this->data;
     }

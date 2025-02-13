@@ -121,9 +121,11 @@ $options = [
 ]
 ```
 
+Pass the options array to constructor method:
+
 ```php
-$data      = new Pop\Csv\Csv($users);
-$csvString = $data->serialize($options);
+$data      = new Pop\Csv\Csv($users, $options);
+$csvString = $data->serialize();
 echo $csvString;
 ```
 
@@ -132,13 +134,6 @@ The above will output the following CSV data:
 ```text
 id,username,country,roles
 1,testuser,US,"Admin,Staff"
-```
-
-Pass the options array to `serialize()` or `unserialize()` methods:
-
-```php
-$csvString = $csv->serialize($options);
-$csvData   = $csv->unserialize($options);
 ```
 
 [Top](#pop-csv)
