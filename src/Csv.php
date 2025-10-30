@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,9 @@ namespace Pop\Csv;
  * @category   Pop
  * @package    Pop\Csv
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    4.2.0
+ * @version    4.2.1
  */
 class Csv
 {
@@ -63,7 +63,7 @@ class Csv
      * @param  mixed $data
      * @param ?array $options
      */
-    public function __construct(mixed $data = null, array $options = null)
+    public function __construct(mixed $data = null, ?array $options = null)
     {
         if ($data !== null) {
             // If data is a file
@@ -336,7 +336,7 @@ class Csv
      * @param  ?array $options
      * @return Csv
      */
-    public static function loadFile(string $file, array $options = null): Csv
+    public static function loadFile(string $file, ?array $options = null): Csv
     {
         $csv = new self($file, $options);
         $csv->unserialize();
@@ -739,7 +739,7 @@ class Csv
         $lines  = preg_split("/((\r?\n)|(\r\n?))/", $string);
         $fields = [];
         if (isset($lines[0])) {
-            $fields = str_getcsv($lines[0]);
+            $fields = str_getcsv($lines[0], ",", "\"", "\\");
         }
         return (count($fields) > 0);
     }
