@@ -739,7 +739,7 @@ class Csv
         $lines  = preg_split("/((\r?\n)|(\r\n?))/", $string);
         $fields = [];
         if (isset($lines[0])) {
-            $fields = str_getcsv($lines[0], ",", "\"", "\\");
+            $fields = str_getcsv($lines[0], escape: "\\");
         }
         return (count($fields) > 0);
     }
