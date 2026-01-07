@@ -475,6 +475,7 @@ class Csv
         $options['fields']    ??= true;
         $options['newline']   ??= true;
         $options['limit']     ??= 0;
+        $options['length']    ??= 0;
         $options['map']       ??= [];
         $options['columns']   ??= [];
 
@@ -633,7 +634,7 @@ class Csv
         }
 
         if (($handle = fopen($tempFile, 'r')) !== false) {
-            while (($dataFields = fgetcsv($handle, 1000, $options['delimiter'], $options['enclosure'], $options['escape'])) !== false) {
+            while (($dataFields = fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape'])) !== false) {
                 if (($options['fields']) && (count($dataFields) == count($fieldKeys)) && ($dataFields != $fieldKeys)) {
                     $d = [];
                     foreach ($dataFields as $i => $value) {
