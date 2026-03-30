@@ -697,6 +697,9 @@ class Csv
                     if (str_contains($val, $enclosure)) {
                         $val = str_replace($enclosure, $escape . $enclosure, $val);
                     }
+                    if (is_numeric($val) && str_starts_with($val, 0)) {
+                        $val = $enclosure . $val . $enclosure;
+                    }
                     if ((str_contains($val, $delimiter)) || (str_contains($val, "\n")) ||
                         (str_contains($val, $escape . $enclosure))) {
                         $val = $enclosure . $val . $enclosure;
