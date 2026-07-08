@@ -385,6 +385,40 @@ class Csv
     }
 
     /**
+     * Get row count from file
+     *
+     * @param  string $file
+     * @param  array  $options
+     * @return int
+     */
+    public static function getRowCountFromFile(string $file, array $options = []): int
+    {
+        $count = 0;
+
+        if (($handle = fopen($file, 'r')) !== false) {
+            $headers   = $options['headers'] ?? false;
+            $skipBlank = $options['skip_blank'] ?? true;
+            $length    = $options['length'] ?? null;
+            $delimiter = $options['delimiter'] ?? ',';
+            $enclosure = $options['enclosure'] ?? "\"";
+            $escape    = $options['escape'] ?? "\\";
+
+            while (($row = fgetcsv($handle, $length, $delimiter, $enclosure, $escape)) !== false) {
+                if (($skipBlank) && ($row === [null])) {
+                    continue;
+                }
+                $count++;
+            }
+
+            if (($count > 0) && ($headers)) {
+                $count--;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * Write data to file
      *
      * @param  array  $data

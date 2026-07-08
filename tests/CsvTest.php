@@ -14,6 +14,16 @@ class CsvTest extends TestCase
         $this->assertEquals('testuser1', $csv->getData()[0]['username']);
     }
 
+    public function testRowCountFromFile1()
+    {
+        $this->assertEquals(3, Csv::getRowCountFromFile(__DIR__ . '/tmp/data.csv'));
+    }
+
+    public function testRowCountFromFile2()
+    {
+        $this->assertEquals(2, Csv::getRowCountFromFile(__DIR__ . '/tmp/data.csv',  ['headers' => true]));
+    }
+
     public function testLoadString()
     {
         $csv = Csv::loadString(file_get_contents(__DIR__ . '/tmp/data.csv'));
