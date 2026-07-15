@@ -657,7 +657,7 @@ class Csv
         $data      = [];
         $fieldKeys = [];
 
-        $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pop-csv-tmp-' . time() . '.csv';
+        $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pop-csv-tmp-' . time() . (($options['delimiter'] == "\t") ? '.tsv' : '.csv');
         file_put_contents($tempFile, $string);
 
         if ($options['fields']) {
