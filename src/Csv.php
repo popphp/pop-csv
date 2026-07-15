@@ -67,7 +67,7 @@ class Csv
     {
         if ($data !== null) {
             // If data is a file
-            if (is_string($data) && (stripos($data, '.csv') !== false) && file_exists($data)) {
+            if (is_string($data) && ((stripos($data, '.csv') !== false) || (stripos($data, '.tsv') !== false)) && file_exists($data)) {
                 $this->string = file_get_contents($data);
             // Else, if it's just data
             } else if (!is_string($data)) {
