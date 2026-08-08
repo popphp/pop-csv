@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@ namespace Pop\Csv;
  * @author     Nick Sagona, III <dev@noladev.com>
  * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    4.2.1
+ * @version    4.3.0
  */
 class Csv
 {
@@ -43,16 +43,17 @@ class Csv
      * @var array
      */
     protected array $options = [
-        'exclude'   => [],
-        'include'   => [],
-        'delimiter' => ',',
-        'enclosure' => '"',
-        'escape'    => '"',
-        'fields'    => true,
-        'newline'   => true,
-        'limit'     => 0,
-        'map'       => [],
-        'columns'   => [],
+        'exclude'        => [],
+        'include'        => [],
+        'delimiter'      => ',',
+        'enclosure'      => '"',
+        'escape'         => '"',
+        'fields'         => true,
+        'newline'        => true,
+        'limit'          => 0,
+        'map'            => [],
+        'columns'        => [],
+        'escapeFormulas' => false,
     ];
 
     /**
@@ -142,9 +143,9 @@ class Csv
     /**
      * Get data
      *
-     * @return array
+     * @return ?array
      */
-    public function getData(): array
+    public function getData(): ?array
     {
         return $this->data;
     }
@@ -164,9 +165,9 @@ class Csv
     /**
      * Get string
      *
-     * @return string
+     * @return ?string
      */
-    public function getString(): string
+    public function getString(): ?string
     {
         return $this->string;
     }
@@ -401,7 +402,7 @@ class Csv
             $length    = $options['length'] ?? null;
             $delimiter = $options['delimiter'] ?? ',';
             $enclosure = $options['enclosure'] ?? "\"";
-            $escape    = $options['escape'] ?? "\\";
+            $escape    = $options['escape'] ?? "\"";
 
             while (($row = fgetcsv($handle, $length, $delimiter, $enclosure, $escape)) !== false) {
                 if (($skipBlank) && ($row === [null])) {
@@ -501,17 +502,18 @@ class Csv
      */
     public static function processOptions(array $options): array
     {
-        $options['exclude']   ??= [];
-        $options['include']   ??= [];
-        $options['delimiter'] ??= ',';
-        $options['enclosure'] ??= '"';
-        $options['escape']    ??= '"';
-        $options['fields']    ??= true;
-        $options['newline']   ??= true;
-        $options['limit']     ??= 0;
-        $options['length']    ??= 0;
-        $options['map']       ??= [];
-        $options['columns']   ??= [];
+        $options['exclude']        ??= [];
+        $options['include']        ??= [];
+        $options['delimiter']      ??= ',';
+        $options['enclosure']      ??= '"';
+        $options['escape']         ??= '"';
+        $options['fields']         ??= true;
+        $options['newline']        ??= true;
+        $options['limit']          ??= 0;
+        $options['length']         ??= 0;
+        $options['map']            ??= [];
+        $options['columns']        ??= [];
+        $options['escapeFormulas'] ??= false;
 
         return $options;
     }
@@ -579,7 +581,7 @@ class Csv
         $options = self::processOptions($options);
         $csvRow  = self::serializeRow(
             (array)$row, $exclude, $include, $options['delimiter'], $options['enclosure'], $options['escape'],
-            $options['newline'], $options['limit'], $options['map'], $options['columns']
+            $options['newline'], $options['limit'], $options['map'], $options['columns'], $options['escapeFormulas']
         );
 
         file_put_contents($file, $csvRow, FILE_APPEND);
@@ -623,21 +625,24 @@ class Csv
             $include = [];
         }
 
-        $options  = self::processOptions($options);
-        $csv      = '';
-        $firstKey = array_keys($data)[0];
+        $options = self::processOptions($options);
+        $csv     = '';
 
-        if (is_array($data) && isset($data[$firstKey]) &&
-            (is_array($data[$firstKey]) || ($data[$firstKey] instanceof \ArrayObject)) && ($options['fields'])) {
-            $csv .= self::getFieldHeaders((array)$data[$firstKey], $options['delimiter'], $exclude, $include);
-        }
+        if (!empty($data)) {
+            $firstKey = array_keys($data)[0];
 
-        // Initialize and clean the field values.
-        foreach ($data as $value) {
-            $csv .= self::serializeRow(
-                (array)$value, $exclude, $include, $options['delimiter'], $options['enclosure'], $options['escape'],
-                $options['newline'], $options['limit'], $options['map'], $options['columns']
-            );
+            if (is_array($data) && isset($data[$firstKey]) &&
+                (is_array($data[$firstKey]) || ($data[$firstKey] instanceof \ArrayObject)) && ($options['fields'])) {
+                $csv .= self::getFieldHeaders((array)$data[$firstKey], $options['delimiter'], $exclude, $include);
+            }
+
+            // Initialize and clean the field values.
+            foreach ($data as $value) {
+                $csv .= self::serializeRow(
+                    (array)$value, $exclude, $include, $options['delimiter'], $options['enclosure'], $options['escape'],
+                    $options['newline'], $options['limit'], $options['map'], $options['columns'], $options['escapeFormulas']
+                );
+            }
         }
 
         return $csv;
@@ -652,12 +657,16 @@ class Csv
      */
     public static function unserializeString(string $string, array $options = []): array
     {
+        if (str_starts_with($string, "\xEF\xBB\xBF")) {
+            $string = substr($string, 3);
+        }
+
         $options   = self::processOptions($options);
         $lines     = preg_split("/((\r?\n)|(\r\n?))/", $string);
         $data      = [];
         $fieldKeys = [];
 
-        $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pop-csv-tmp-' . time() . (($options['delimiter'] == "\t") ? '.tsv' : '.csv');
+        $tempFile = tempnam(sys_get_temp_dir(), 'pop-csv-tmp-');
         file_put_contents($tempFile, $string);
 
         if ($options['fields']) {
@@ -667,23 +676,78 @@ class Csv
             }
         }
 
-        if (($handle = fopen($tempFile, 'r')) !== false) {
-            while (($dataFields = fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape'])) !== false) {
-                if (($options['fields']) && (count($dataFields) == count($fieldKeys)) && ($dataFields != $fieldKeys)) {
-                    $d = [];
-                    foreach ($dataFields as $i => $value) {
-                        $d[$fieldKeys[$i]] = $value;
+        try {
+            if (($handle = fopen($tempFile, 'r')) !== false) {
+                try {
+                    while (($dataFields = fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape'])) !== false) {
+                        if (($options['fields']) && (count($dataFields) == count($fieldKeys)) && ($dataFields != $fieldKeys)) {
+                            $d = [];
+                            foreach ($dataFields as $i => $value) {
+                                $d[$fieldKeys[$i]] = $value;
+                            }
+                            $data[] = $d;
+                        } else if ($dataFields != $fieldKeys) {
+                            $data[] = $dataFields;
+                        }
                     }
-                    $data[] = $d;
-                } else if ($dataFields != $fieldKeys) {
-                    $data[] = $dataFields;
+                } finally {
+                    fclose($handle);
                 }
             }
-            fclose($handle);
+        } finally {
             unlink($tempFile);
         }
 
         return $data;
+    }
+
+    /**
+     * Read a CSV file row-by-row without loading the whole file into memory
+     *
+     * @param  string $file
+     * @param  ?array $options
+     * @throws Exception
+     * @return \Generator
+     */
+    public static function readRowsFromFile(string $file, ?array $options = null): \Generator
+    {
+        if (!file_exists($file)) {
+            throw new Exception("Error: The file '" . $file . "' does not exist.");
+        }
+
+        $options   = self::processOptions($options ?? []);
+        $fieldKeys = [];
+        $handle    = fopen($file, 'r');
+
+        try {
+            // Strip a leading UTF-8 BOM, if present, without disturbing the rest of the stream
+            if (fread($handle, 3) !== "\xEF\xBB\xBF") {
+                rewind($handle);
+            }
+
+            if ($options['fields']) {
+                $fieldNames = fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape']);
+                if ($fieldNames !== false) {
+                    foreach ($fieldNames as $name) {
+                        $fieldKeys[] = trim((string)$name);
+                    }
+                }
+            }
+
+            while (($dataFields = fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape'])) !== false) {
+                if (($options['fields']) && (count($dataFields) == count($fieldKeys)) && ($dataFields != $fieldKeys)) {
+                    $row = [];
+                    foreach ($dataFields as $i => $value) {
+                        $row[$fieldKeys[$i]] = $value;
+                    }
+                    yield $row;
+                } else if ($dataFields != $fieldKeys) {
+                    yield $dataFields;
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**
@@ -699,11 +763,13 @@ class Csv
      * @param  int    $limit
      * @param  array  $map
      * @param  array  $columns
+     * @param  bool   $escapeFormulas
      * @return string
      */
     public static function serializeRow(
         array $value, array $exclude = [], array $include = [], string $delimiter = ',', string $enclosure = '"',
-        string $escape = '"', bool $newline = true, int $limit = 0, array $map = [], array $columns = []
+        string $escape = '"', bool $newline = true, int $limit = 0, array $map = [], array $columns = [],
+        bool $escapeFormulas = false
     ): string
     {
         $rowAry = [];
@@ -728,6 +794,9 @@ class Csv
                 }
 
                 if ($val !== null) {
+                    if ($escapeFormulas && !is_numeric($val) && in_array(substr((string)$val, 0, 1), ['=', '+', '-', '@'], true)) {
+                        $val = "'" . $val;
+                    }
                     if (str_contains($val, $enclosure)) {
                         $val = str_replace($enclosure, $escape . $enclosure, $val);
                     }
@@ -766,7 +835,7 @@ class Csv
                 $headersAry[] = $header;
             }
         }
-        return implode($delimiter, $headersAry) . PHP_EOL;
+        return implode($delimiter, $headersAry) . "\n";
     }
 
     /**
@@ -777,12 +846,28 @@ class Csv
      */
     public static function isValid(string $string): bool
     {
-        $lines  = preg_split("/((\r?\n)|(\r\n?))/", $string);
-        $fields = [];
-        if (isset($lines[0])) {
-            $fields = str_getcsv($lines[0], escape: "\\");
+        $lines = preg_split("/((\r?\n)|(\r\n?))/", trim($string));
+
+        if (empty($lines) || $lines[0] === '') {
+            return false;
         }
-        return (count($fields) > 0);
+
+        $expectedCount = count(str_getcsv($lines[0], escape: "\\"));
+
+        if ($expectedCount === 0) {
+            return false;
+        }
+
+        foreach ($lines as $line) {
+            if ($line === '') {
+                continue;
+            }
+            if (count(str_getcsv($line, escape: "\\")) !== $expectedCount) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

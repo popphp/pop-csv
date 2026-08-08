@@ -439,4 +439,172 @@ class CsvTest extends TestCase
         $this->assertStringContainsString('foo', $result);
     }
 
+    public function testGetDataReturnsNullWhenNotSet()
+    {
+        $csv = new Csv();
+        $this->assertNull($csv->getData());
+    }
+
+    public function testGetStringReturnsNullWhenNotSet()
+    {
+        $csv = new Csv();
+        $this->assertNull($csv->getString());
+    }
+
+    public function testSerializeEmptyData()
+    {
+        $csv = new Csv([]);
+        $this->assertEquals('', $csv->serialize());
+    }
+
+    public function testEscapeFormulasOptionOff()
+    {
+        $data = [
+            ['formula' => '=1+1', 'number' => '-5']
+        ];
+        $csv       = new Csv($data);
+        $csvString = $csv->serialize();
+        $this->assertStringContainsString('=1+1', $csvString);
+        $this->assertStringNotContainsString("'=1+1", $csvString);
+    }
+
+    public function testEscapeFormulasOptionOn()
+    {
+        $data = [
+            ['formula' => '=1+1', 'number' => '-5']
+        ];
+        $csv       = new Csv($data, ['escapeFormulas' => true]);
+        $csvString = $csv->serialize();
+        $this->assertStringContainsString("'=1+1", $csvString);
+        $this->assertStringContainsString(',-5', $csvString);
+    }
+
+    public function testFieldHeadersUseSameLineEndingAsRows()
+    {
+        $data      = [['first_name' => 'Bob', 'last_name' => 'Smith']];
+        $csvString = (new Csv($data))->serialize();
+        $lines     = explode("\n", $csvString);
+        // If the header and rows didn't share a terminator, splitting on "\n" alone
+        // would leave a stray "\r" dangling on the header line.
+        $this->assertSame('first_name,last_name', $lines[0]);
+    }
+
+    public function testRowCountFromFileMatchesGetDataFromFile()
+    {
+        $file = __DIR__ . '/tmp/escape-count.csv';
+        $data = [
+            ['note' => "a,b\\"],
+            ['note' => 'second row'],
+        ];
+        Csv::writeDataToFile($data, $file);
+
+        $loaded = Csv::getDataFromFile($file);
+        $count  = Csv::getRowCountFromFile($file, ['headers' => true]);
+
+        $this->assertEquals(count($loaded), $count);
+
+        unlink($file);
+    }
+
+    public function testTsvRoundTrip()
+    {
+        $file = __DIR__ . '/tmp/test.tsv';
+        $data = [
+            ['first_name' => 'Bob', 'last_name' => 'Smith'],
+            ['first_name' => 'Jane', 'last_name' => 'Smith'],
+        ];
+        Csv::writeDataToFile($data, $file, ['delimiter' => "\t"]);
+
+        $loaded = Csv::loadFile($file, ['delimiter' => "\t"]);
+        $this->assertEquals('Bob', $loaded->getData()[0]['first_name']);
+        $this->assertEquals('Jane', $loaded->getData()[1]['first_name']);
+        $this->assertEquals(2, count($loaded->getData()));
+
+        unlink($file);
+    }
+
+    public function testUnserializeStripsUtf8Bom()
+    {
+        $csvString = "\xEF\xBB\xBFfirst_name,last_name\nBob,Smith\n";
+        $csv       = new Csv($csvString);
+        $data      = $csv->unserialize();
+        $this->assertArrayHasKey('first_name', $data[0]);
+        $this->assertEquals('Bob', $data[0]['first_name']);
+    }
+
+    public function testUnserializeStringDoesNotLeakTempFiles()
+    {
+        $before = glob(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pop-csv-tmp-*');
+        Csv::loadString("first_name,last_name\nBob,Smith\n");
+        $after  = glob(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pop-csv-tmp-*');
+        $this->assertEquals($before, $after);
+    }
+
+    public function testIsValidRejectsEmptyString()
+    {
+        $this->assertFalse(Csv::isValid(''));
+    }
+
+    public function testIsValidRejectsMismatchedColumnCounts()
+    {
+        $this->assertFalse(Csv::isValid("a,b,c\n1,2\n"));
+    }
+
+    public function testIsValidAcceptsConsistentColumns()
+    {
+        $this->assertTrue(Csv::isValid("a,b,c\n1,2,3\n4,5,6\n"));
+    }
+
+    public function testReadRowsFromFileYieldsCorrectRows()
+    {
+        $rows = [];
+        foreach (Csv::readRowsFromFile(__DIR__ . '/tmp/data.csv') as $row) {
+            $rows[] = $row;
+        }
+        $this->assertEquals(2, count($rows));
+        $this->assertEquals('testuser1', $rows[0]['username']);
+        $this->assertEquals('testuser2', $rows[1]['username']);
+    }
+
+    public function testReadRowsFromFileMissingFileThrowsException()
+    {
+        $this->expectException('Pop\Csv\Exception');
+        foreach (Csv::readRowsFromFile(__DIR__ . '/tmp/does-not-exist.csv') as $row) {
+            // no-op
+        }
+    }
+
+    public function testReadRowsFromFileUsesFarLessMemoryThanGetDataFromFile()
+    {
+        $file   = __DIR__ . '/tmp/large.csv';
+        $handle = fopen($file, 'w');
+        fwrite($handle, "id,value\n");
+        for ($i = 0; $i < 50000; $i++) {
+            fwrite($handle, $i . ',' . str_repeat('x', 40) . "\n");
+        }
+        fclose($handle);
+
+        $memoryBeforeStreaming = memory_get_usage();
+        $count                = 0;
+        $lastId                = null;
+        foreach (Csv::readRowsFromFile($file) as $row) {
+            $count++;
+            $lastId = $row['id'];
+        }
+        $streamingMemoryUsed = memory_get_usage() - $memoryBeforeStreaming;
+
+        $this->assertEquals(50000, $count);
+        $this->assertEquals('49999', $lastId);
+
+        $memoryBeforeEager = memory_get_usage();
+        $eagerData         = Csv::getDataFromFile($file);
+        $eagerMemoryUsed    = memory_get_usage() - $memoryBeforeEager;
+
+        $this->assertEquals(50000, count($eagerData));
+        $this->assertLessThan($eagerMemoryUsed / 2, $streamingMemoryUsed);
+
+        unset($eagerData);
+        unlink($file);
+    }
+
 }
