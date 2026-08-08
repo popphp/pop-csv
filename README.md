@@ -120,13 +120,13 @@ patterns, so you don't need to instantiate a `Csv` object and call a second meth
 ```php
 use Pop\Csv\Csv;
 
-$csv     = Csv::loadFile('/path/to/file.csv');    // new Csv($file) + unserialize(), returns the Csv object
-$csv     = Csv::loadString($csvString);           // same, from a raw CSV string
-$csv     = Csv::loadData($phpData);               // new Csv($data) + serialize(), returns the Csv object
+$csv     = Csv::loadFile('/path/to/file.csv');        // new Csv($file) + unserialize(), returns the Csv object
+$csv     = Csv::loadString($csvString);               // same, from a raw CSV string
+$csv     = Csv::loadData($phpData);                   // new Csv($data) + serialize(), returns the Csv object
 $phpData = Csv::getDataFromFile('/path/to/file.csv'); // like loadFile(), but returns the array directly
 
-Csv::writeDataToFile($phpData, '/path/to/file.csv');           // build + serialize + writeToFile in one call
-Csv::outputDataToHttp($phpData, null, 'my-file.csv');          // build + serialize + outputToHttp in one call
+Csv::writeDataToFile($phpData, '/path/to/file.csv');  // build + serialize + writeToFile in one call
+Csv::outputDataToHttp($phpData, null, 'my-file.csv'); // build + serialize + outputToHttp in one call
 ```
 
 All of these accept the same `?array $options` as the constructor.
