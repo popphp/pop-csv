@@ -147,7 +147,8 @@ $options = [
     'escape'         => '"',       // String character to escape in the data, i.e. "my ""data"" here"
     'fields'         => true,      // Include the field names in the first row 
     'newline'        => true,      // Allow newlines in a data cell. Set as false to trim them
-    'limit'          => 0,         // Character limit of a data cell. 0 means no limit
+    'limit'          => 0,         // Character limit of a data cell when serializing. 0 means no limit
+    'length'         => 0,         // Max line length read per row when parsing (fgetcsv). 0 means no limit
     'map'            => [],        // Array key of a single array value to map to the data cell value
     'columns'        => [],        // Array key of a multidimensional array value to map and join into the data cell value
     'escapeFormulas' => false,     // Guard against CSV/Excel formula injection by prefixing risky cells with a single quote
@@ -206,9 +207,9 @@ non-numeric cell that starts with one of those characters with a single quote:
 
 ```php
 $options = ['escapeFormulas' => true];
-$data    = [['note' => '=cmd|"/c calc"!A1']];
+$data    = [['note' => '=SUM(A1:A10)']];
 $csv     = new Pop\Csv\Csv($data, $options);
-echo $csv->serialize(); // note\n'=cmd|"/c calc"!A1\n
+echo $csv->serialize(); // note\n'=SUM(A1:A10)\n
 ```
 
 This is disabled by default to preserve existing output for data that isn't user-controlled.
@@ -271,10 +272,12 @@ $data->outputToHttp('my-file.csv');
 
 ##### Force download of file
 
-Pass a `true` boolean as the second parameter, which forces `attachment` for the `Content-Disposition` header. 
+`$forceDownload` defaults to `true`, which sends `attachment` in the `Content-Disposition` header so the
+browser downloads the file instead of trying to display it. Pass `false` to disable that and let the
+browser handle it inline instead:
 
 ```php
-$data->outputToHttp('my-file.csv', true);
+$data->outputToHttp('my-file.csv', false);
 ```
 
 ##### Additional HTTP headers
@@ -428,7 +431,8 @@ Errors
 
 All of the following throw `Pop\Csv\Exception` (which extends PHP's built-in `\Exception`):
 
-- `writeBlankFile()` / `outputBlankFileToHttp()` — called before any data has been set on the `Csv` object.
+- `writeBlankFile()` / `outputBlankFileToHttp()` (and the static equivalents `writeTemplateToFile()` /
+  `outputTemplateToHttp()`) — called before any data has been set on the `Csv` object.
 - `appendDataToFile()` / `appendRowToFile()` (and the instance equivalents `appendData()`/`appendRow()`) —
   the target file doesn't exist.
 - `appendRowToFile()` / `appendRow()` — `$validate` is `true` (the default) and the row's keys don't match
