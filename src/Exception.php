@@ -19,7 +19,7 @@ namespace Pop\Csv;
  * @category   Pop
  * @package    Pop\Csv
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  * @version    4.2.1
  */
