@@ -645,4 +645,32 @@ class CsvTest extends TestCase
         }
     }
 
+    public function testSerializeDataFlattensMultipleAssociativeGroups()
+    {
+        $data = [
+            'group_one' => [
+                ['first_name' => 'Bob', 'last_name' => 'Smith'],
+            ],
+            'group_two' => [
+                ['first_name' => 'Jane', 'last_name' => 'Doe'],
+            ],
+        ];
+        $csv = Csv::serializeData($data);
+        $this->assertStringContainsString('Bob,Smith', $csv);
+        $this->assertStringContainsString('Jane,Doe', $csv);
+        $this->assertTrue(strpos($csv, 'Bob,Smith') < strpos($csv, 'Jane,Doe'));
+    }
+
+    public function testUnserializeStringWithCarriageReturnNewlines()
+    {
+        $data = Csv::unserializeString("foo,bar\r\n1,2\r\n");
+        $this->assertEquals(['foo' => '1', 'bar' => '2'], $data[0]);
+    }
+
+    public function testUnserializeStringSingleLineNoTrailingNewline()
+    {
+        $data = Csv::unserializeString('foo,bar');
+        $this->assertEquals([], $data);
+    }
+
 }

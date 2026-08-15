@@ -520,6 +520,40 @@ class Csv
     }
 
     /**
+     * Normalize the exclude/include options into a pair of arrays
+     *
+     * @param  array $options
+     * @return array
+     */
+    protected static function normalizeExcludeInclude(array $options): array
+    {
+        $exclude = isset($options['exclude']) ? ((!is_array($options['exclude'])) ? [$options['exclude']] : $options['exclude']) : [];
+        $include = isset($options['include']) ? ((!is_array($options['include'])) ? [$options['include']] : $options['include']) : [];
+
+        return [$exclude, $include];
+    }
+
+    /**
+     * Build a trimmed field-key list from a raw fgetcsv/str_getcsv header row
+     *
+     * @param  array|false $fieldNames
+     * @return array
+     */
+    protected static function buildFieldKeys(array|false $fieldNames): array
+    {
+        if ($fieldNames === false) {
+            return [];
+        }
+
+        $fieldKeys = [];
+        foreach ($fieldNames as $name) {
+            $fieldKeys[] = trim((string)$name);
+        }
+
+        return $fieldKeys;
+    }
+
+    /**
      * Append additional CSV data to a pre-existing file
      *
      * @param  string $file
@@ -573,17 +607,7 @@ class Csv
             }
         }
 
-        if (isset($options['exclude'])) {
-            $exclude = (!is_array($options['exclude'])) ? [$options['exclude']] : $options['exclude'];
-        } else {
-            $exclude = [];
-        }
-
-        if (isset($options['include'])) {
-            $include = (!is_array($options['include'])) ? [$options['include']] : $options['include'];
-        } else {
-            $include = [];
-        }
+        [$exclude, $include] = self::normalizeExcludeInclude($options);
 
         $options = self::processOptions($options);
         $csvRow  = self::serializeRow(
@@ -613,24 +637,10 @@ class Csv
         }
 
         if ($isAssoc) {
-            $newData = [];
-            foreach ($data as $key => $value) {
-                $newData = array_merge($newData, $value);
-            }
-            $data = $newData;
+            $data = array_merge(...array_values($data));
         }
 
-        if (isset($options['exclude'])) {
-            $exclude = (!is_array($options['exclude'])) ? [$options['exclude']] : $options['exclude'];
-        } else {
-            $exclude = [];
-        }
-
-        if (isset($options['include'])) {
-            $include = (!is_array($options['include'])) ? [$options['include']] : $options['include'];
-        } else {
-            $include = [];
-        }
+        [$exclude, $include] = self::normalizeExcludeInclude($options);
 
         $options = self::processOptions($options);
         $csv     = '';
@@ -669,7 +679,7 @@ class Csv
         }
 
         $options   = self::processOptions($options);
-        $lines     = preg_split("/((\r?\n)|(\r\n?))/", $string);
+        $firstLine = substr($string, 0, strcspn($string, "\r\n"));
         $data      = [];
         $fieldKeys = [];
 
@@ -677,10 +687,7 @@ class Csv
         file_put_contents($tempFile, $string);
 
         if ($options['fields']) {
-            $fieldNames = str_getcsv($lines[0], $options['delimiter'], $options['enclosure'], $options['escape']);
-            foreach ($fieldNames as $name) {
-                $fieldKeys[] = trim((string)$name);
-            }
+            $fieldKeys = self::buildFieldKeys(str_getcsv($firstLine, $options['delimiter'], $options['enclosure'], $options['escape']));
         }
 
         try {
@@ -733,12 +740,7 @@ class Csv
             }
 
             if ($options['fields']) {
-                $fieldNames = fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape']);
-                if ($fieldNames !== false) {
-                    foreach ($fieldNames as $name) {
-                        $fieldKeys[] = trim((string)$name);
-                    }
-                }
+                $fieldKeys = self::buildFieldKeys(fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape']));
             }
 
             while (($dataFields = fgetcsv($handle, $options['length'], $options['delimiter'], $options['enclosure'], $options['escape'])) !== false) {
@@ -782,48 +784,83 @@ class Csv
         $rowAry = [];
         foreach ($value as $key => $val) {
             if (!in_array($key, $exclude) && (empty($include) || in_array($key, $include))) {
-                // Handle array map/column
                 if (is_array($val)) {
-                    if (!empty($val) && isset($map[$key]) && isset($val[$map[$key]])) {
-                        $val = $val[$map[$key]];
-                    } else if (!empty($val) && isset($columns[$key]) && isset($val[0]) && isset($val[0][$columns[$key]])) {
-                        $val = implode(',', array_column($val, $columns[$key]));
-                    } else {
-                        $val = null;
-                    }
+                    $val = self::resolveArrayValue($val, $key, $map, $columns);
                 }
 
                 if ($val !== null) {
                     $isNumeric = is_numeric($val);
-                    $val       = (string)$val;
-
-                    if (!$newline) {
-                        $val = str_replace(["\n", "\r"], [" ", " "], $val);
-                    }
-                    if ($limit > 0) {
-                        $val = substr($val, 0, $limit);
-                    }
-                    if ($escapeFormulas && !$isNumeric && in_array(substr($val, 0, 1), ['=', '+', '-', '@'], true)) {
-                        $val = "'" . $val;
-                    }
-                    if (str_contains($val, $enclosure)) {
-                        $val = str_replace($enclosure, $escape . $enclosure, $val);
-                    }
-                    if ($isNumeric && str_starts_with($val, '0')) {
-                        $val = $enclosure . $val . $enclosure;
-                    }
-                    if ((str_contains($val, $delimiter)) || (str_contains($val, "\n")) ||
-                        (str_contains($val, $escape . $enclosure))) {
-                        $val = $enclosure . $val . $enclosure;
-                    }
+                    $val       = self::formatFieldValue(
+                        (string)$val, $isNumeric, $delimiter, $enclosure, $escape, $newline, $limit, $escapeFormulas
+                    );
                 }
-
 
                 $rowAry[] = $val;
             }
         }
 
         return implode($delimiter, $rowAry) . "\n";
+    }
+
+    /**
+     * Resolve a nested array field value down to a scalar via the map/columns options
+     *
+     * @param  array      $val
+     * @param  int|string $key
+     * @param  array      $map
+     * @param  array      $columns
+     * @return mixed
+     */
+    protected static function resolveArrayValue(array $val, int|string $key, array $map, array $columns): mixed
+    {
+        if (!empty($val) && isset($map[$key]) && isset($val[$map[$key]])) {
+            return $val[$map[$key]];
+        } else if (!empty($val) && isset($columns[$key]) && isset($val[0]) && isset($val[0][$columns[$key]])) {
+            return implode(',', array_column($val, $columns[$key]));
+        }
+
+        return null;
+    }
+
+    /**
+     * Apply newline-stripping, length-limiting, formula-escaping and quoting rules to a single field value
+     *
+     * @param  string $val
+     * @param  bool   $isNumeric
+     * @param  string $delimiter
+     * @param  string $enclosure
+     * @param  string $escape
+     * @param  bool   $newline
+     * @param  int    $limit
+     * @param  bool   $escapeFormulas
+     * @return string
+     */
+    protected static function formatFieldValue(
+        string $val, bool $isNumeric, string $delimiter, string $enclosure, string $escape, bool $newline,
+        int $limit, bool $escapeFormulas
+    ): string
+    {
+        if (!$newline) {
+            $val = str_replace(["\n", "\r"], [" ", " "], $val);
+        }
+        if ($limit > 0) {
+            $val = substr($val, 0, $limit);
+        }
+        if ($escapeFormulas && !$isNumeric && in_array(substr($val, 0, 1), ['=', '+', '-', '@'], true)) {
+            $val = "'" . $val;
+        }
+        if (str_contains($val, $enclosure)) {
+            $val = str_replace($enclosure, $escape . $enclosure, $val);
+        }
+        if ($isNumeric && str_starts_with($val, '0')) {
+            $val = $enclosure . $val . $enclosure;
+        }
+        if ((str_contains($val, $delimiter)) || (str_contains($val, "\n")) ||
+            (str_contains($val, $escape . $enclosure))) {
+            $val = $enclosure . $val . $enclosure;
+        }
+
+        return $val;
     }
 
     /**
