@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -556,9 +557,15 @@ class Csv
         }
 
         if ($validate) {
-            $keys    = array_keys($row);
+            $keys       = array_keys($row);
+            $handle     = fopen($file, 'r');
+            $headerLine = ($handle !== false) ? fgets($handle) : false;
+            if ($handle !== false) {
+                fclose($handle);
+            }
             $headers = array_map(
-                function($value) { return str_replace('"', '', $value); }, explode(',', trim(fgets(fopen($file, 'r'))))
+                function($value) { return str_replace('"', '', $value); },
+                explode(',', trim($headerLine !== false ? $headerLine : ''))
             );
 
             if ($keys != $headers) {
@@ -672,7 +679,7 @@ class Csv
         if ($options['fields']) {
             $fieldNames = str_getcsv($lines[0], $options['delimiter'], $options['enclosure'], $options['escape']);
             foreach ($fieldNames as $name) {
-                $fieldKeys[] = trim($name);
+                $fieldKeys[] = trim((string)$name);
             }
         }
 
@@ -775,13 +782,6 @@ class Csv
         $rowAry = [];
         foreach ($value as $key => $val) {
             if (!in_array($key, $exclude) && (empty($include) || in_array($key, $include))) {
-                if (!$newline) {
-                    $val = str_replace(["\n", "\r"], [" ", " "], $val);
-                }
-                if ((int)$limit > 0) {
-                    $val = substr($val, 0, (int)$limit);
-                }
-
                 // Handle array map/column
                 if (is_array($val)) {
                     if (!empty($val) && isset($map[$key]) && isset($val[$map[$key]])) {
@@ -794,13 +794,22 @@ class Csv
                 }
 
                 if ($val !== null) {
-                    if ($escapeFormulas && !is_numeric($val) && in_array(substr((string)$val, 0, 1), ['=', '+', '-', '@'], true)) {
+                    $isNumeric = is_numeric($val);
+                    $val       = (string)$val;
+
+                    if (!$newline) {
+                        $val = str_replace(["\n", "\r"], [" ", " "], $val);
+                    }
+                    if ($limit > 0) {
+                        $val = substr($val, 0, $limit);
+                    }
+                    if ($escapeFormulas && !$isNumeric && in_array(substr($val, 0, 1), ['=', '+', '-', '@'], true)) {
                         $val = "'" . $val;
                     }
                     if (str_contains($val, $enclosure)) {
                         $val = str_replace($enclosure, $escape . $enclosure, $val);
                     }
-                    if (is_numeric($val) && str_starts_with($val, 0)) {
+                    if ($isNumeric && str_starts_with($val, '0')) {
                         $val = $enclosure . $val . $enclosure;
                     }
                     if ((str_contains($val, $delimiter)) || (str_contains($val, "\n")) ||
@@ -853,10 +862,6 @@ class Csv
         }
 
         $expectedCount = count(str_getcsv($lines[0], escape: "\\"));
-
-        if ($expectedCount === 0) {
-            return false;
-        }
 
         foreach ($lines as $line) {
             if ($line === '') {

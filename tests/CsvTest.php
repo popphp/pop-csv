@@ -607,4 +607,42 @@ class CsvTest extends TestCase
         unlink($file);
     }
 
+    public function testSerializeRowWithMixedScalarTypes()
+    {
+        $row = ['id' => 42, 'price' => 9.99, 'active' => true, 'inactive' => false, 'note' => null];
+        $this->assertEquals("42,9.99,1,,\n", Csv::serializeRow($row));
+    }
+
+    public function testSerializeRowMapWithLimitOption()
+    {
+        $row = [
+            'id'    => 1,
+            'roles' => [
+                ['id' => 1, 'name' => 'Admin'],
+                ['id' => 2, 'name' => 'Staff'],
+            ],
+        ];
+        $csvRow = Csv::serializeRow($row, [], [], ',', '"', '"', true, 5, [], ['roles' => 'name']);
+        $this->assertEquals("1,Admin\n", $csvRow);
+    }
+
+    public function testUnserializeStringWithEmptyHeaderLine()
+    {
+        $data = Csv::unserializeString("\nfoo,bar\n");
+        $this->assertEquals(['foo', 'bar'], $data[0]);
+    }
+
+    public function testAppendRowToFileEmptyTargetFileThrowsFriendlyException()
+    {
+        $file = __DIR__ . '/tmp/empty.csv';
+        file_put_contents($file, '');
+
+        try {
+            $this->expectException('Pop\Csv\Exception');
+            Csv::appendRowToFile($file, ['a' => 1, 'b' => 2]);
+        } finally {
+            unlink($file);
+        }
+    }
+
 }
