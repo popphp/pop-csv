@@ -2,7 +2,7 @@ pop-csv
 =======
 
 [![Build Status](https://github.com/popphp/pop-csv/workflows/phpunit/badge.svg)](https://github.com/popphp/pop-csv/actions)
-[![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-csv)](http://cc.popphp.org/pop-csv/)
+[![Coverage Status](https://cc.popphp.org/coverage.php?comp=pop-csv)](https://cc.popphp.org/pop-csv/)
 
 [![Join the chat at https://discord.gg/TZjgT74U7E](https://media.popphp.org/img/discord.svg)](https://discord.gg/TZjgT74U7E)
 
